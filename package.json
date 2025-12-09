@@ -3,7 +3,7 @@
   "displayName": "FlowComments",
   "description": "Sidebar flow tree from plain comments—click to jump and highlight code.",
   "icon": "media/logo.png",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "license": "GPL-3.0-only",
   "author": "catislight",
   "publisher": "catislight",
@@ -18,7 +18,7 @@
     "code"
   ],
   "engines": {
-    "vscode": "^1.106.1"
+    "vscode": "^1.80.0"
   },
   "categories": [
     "Other"
@@ -200,7 +200,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
-    "@types/vscode": "^1.106.1",
+    "@types/vscode": "^1.80.0",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
     "esbuild": "^0.27.0",

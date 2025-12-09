@@ -19,7 +19,7 @@ Flow Comments 通过简单注释帮助导航代码流程。在 VS Code 侧边栏
 1. 打开 VS Code。
 2. 转到扩展 (Ctrl+Shift+X)。
 3. 搜索 `Flow Comments` 并安装。
-4. 需要 VS Code ^1.106.1 或更高版本。
+4. 需要 VS Code ^1.80.0 或更高版本。
 
 ## 配置
 

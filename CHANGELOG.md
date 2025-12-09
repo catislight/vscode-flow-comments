@@ -4,7 +4,7 @@ All notable changes to the "Flow Comments" VS Code extension will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v0.2] - 2025-12-09
+## [v0.2.1] - 2025-12-09
 
 ### Features
 - Visual Tree navigation for flow comments
@@ -18,4 +18,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Persistent index to avoid re-parsing large repositories
 
 ### Compatibility
-- Requires VS Code ^1.106.1
+- Lowered minimum VS Code to ^1.80.0

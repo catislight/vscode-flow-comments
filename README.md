@@ -19,7 +19,7 @@ Benefits: Enhances code reading, reduces switching costs between files, and is i
 1. Open VS Code.
 2. Go to Extensions (Ctrl+Shift+X).
 3. Search for `Flow Comments` and install.
-4. Requires VS Code ^1.106.1 or later.
+4. Requires VS Code ^1.80.0 or later.
 
 ## Configuration
 
