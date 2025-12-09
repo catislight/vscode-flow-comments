@@ -1,0 +1,215 @@
+{
+  "name": "vscode-flow-comments",
+  "displayName": "FlowComments",
+  "description": "Sidebar flow tree from plain comments—click to jump and highlight code.",
+  "icon": "media/logo.png",
+  "version": "0.2.0",
+  "license": "GPL-3.0-only",
+  "author": "catislight",
+  "publisher": "catislight",
+  "keywords": [
+    "flowcomments",
+    "flow comments",
+    "flow",
+    "comments",
+    "comment tree",
+    "navigation",
+    "tree",
+    "code"
+  ],
+  "engines": {
+    "vscode": "^1.106.1"
+  },
+  "categories": [
+    "Other"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/catislight/vscode-flow-comments"
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "flowNav",
+          "title": "Flow Comments",
+          "icon": "media/flow-activity.svg"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Flow Comments",
+      "properties": {
+        "flow.prefix": {
+          "type": "string",
+          "default": "flow",
+          "description": "Comment prefix, e.g., // flow-login start (注释前缀，例如 // flow-登录 start）"
+        },
+        "flow.includeGlobs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "**/*.{ts,tsx,js,jsx}",
+            "**/*.{java,kt}",
+            "**/*.{go}",
+            "**/*.{py}"
+          ],
+          "description": "File matching patterns (glob) for scanning, to speed up large repository scans (参与扫描的文件匹配模式（glob），用于加速大仓库扫描)"
+        },
+        "flow.ignorePaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "node_modules",
+            "dist",
+            ".git"
+          ],
+          "description": "Directories to ignore during indexing (relative to workspace root) (索引时忽略的目录（相对工作区根）)"
+        },
+        "flow.maxFileSizeKB": {
+          "type": "number",
+          "default": 1024,
+          "description": "Maximum file size (KB) for parsing (参与解析的最大文件大小（KB）)"
+        },
+        "flow.scanConcurrency": {
+          "type": "number",
+          "default": 8,
+          "description": "Scan concurrency (number of files processed concurrently), to improve large repository scan speed (扫描并发度（一次并发处理的文件数量），用于提高大仓库扫描速度)"
+        },
+        "flow.highlightBackground": {
+          "type": "string",
+          "default": "rgba(255, 193, 7, 0.16)",
+          "description": "Background color for line highlighting after click jump (supports rgba/hex) (点击跳转后行高亮的背景色（支持 rgba/hex）)"
+        },
+        "flow.highlightColor": {
+          "type": "string",
+          "default": "#1A1A1A",
+          "description": "Text color within the highlighted line range (optional) (行高亮范围内的文本颜色（可选）)"
+        },
+        "flow.tokenBackground": {
+          "type": "string",
+          "default": "rgba(255, 193, 7, 0.28)",
+          "description": "Background color for prefix words in comments in default state (highlights only that word) (默认状态下注释中前缀单词的背景色（仅高亮该词）)"
+        },
+        "flow.tokenColor": {
+          "type": "string",
+          "default": "#1A1A1A",
+          "description": "Text color that applies only to prefix words (to improve contrast) (仅对前缀单词生效的文本颜色（提高对比度）)"
+        },
+        "flow.hintBackground": {
+          "type": "string",
+          "default": "rgba(255, 235, 59, 0.10)",
+          "description": "Background color for flow comment lines in default state (默认状态下 flow 注释行的背景色)"
+        },
+        "flow.strictMode": {
+          "type": "boolean",
+          "default": true,
+          "description": "Strict mode: Enable error prompts (diagnostics not shown when off) (严格模式：开启报错提示（关闭后不显示诊断）)"
+        },
+        "flow.commentStyles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "//",
+            "#"
+          ],
+          "description": "Supported single-line comment starters (e.g., //, #, --) (支持的单行注释起始符（例如 //、#、--）)"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "flow-comments.refresh",
+        "title": "Flow Comments: Refresh"
+      },
+      {
+        "command": "flow-comments.reveal",
+        "title": "Flow Comments: Reveal"
+      },
+      {
+        "command": "flow-comments.scanActive",
+        "title": "Flow Comments: Scan Active File"
+      },
+      {
+        "command": "flow-comments.deleteFeature",
+        "title": "Flow Comments: Delete Flow"
+      },
+      {
+        "command": "flow-comments.deleteNode",
+        "title": "Flow Comments: Delete Item"
+      }
+    ],
+    "views": {
+      "flowNav": [
+        {
+          "id": "flowNavTree",
+          "name": "Comments Tree",
+          "icon": "media/flow-activity.svg"
+        }
+      ]
+    },
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "flow-comments.deleteFeature",
+          "when": "view == flowNavTree && viewItem == flowFeature",
+          "group": "navigation"
+        },
+        {
+          "command": "flow-comments.deleteNode",
+          "when": "view == flowNavTree && viewItem == flowStart",
+          "group": "navigation"
+        },
+        {
+          "command": "flow-comments.deleteNode",
+          "when": "view == flowNavTree && viewItem == flowEnd",
+          "group": "navigation"
+        },
+        {
+          "command": "flow-comments.deleteNode",
+          "when": "view == flowNavTree && viewItem == flowNode",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "pnpm run package",
+    "compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "package": "pnpm run check-types && pnpm run lint && node esbuild.js --production",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/vscode": "^1.106.1",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.27.0",
+    "eslint": "^9.39.1",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.3"
+  },
+  "dependencies": {
+    "pinyin-pro": "^3.27.0"
+  }
+}
