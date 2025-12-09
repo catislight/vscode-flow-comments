@@ -2,6 +2,7 @@ out
 dist
 node_modules
 .vscode-test/
+.vscode/flow-comments.index.json
 *.vsix
 /DOCS.md
 /TODO.md
