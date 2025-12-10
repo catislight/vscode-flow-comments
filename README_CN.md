@@ -12,6 +12,9 @@ Flow Comments 通过简单注释帮助导航代码流程。在 VS Code 侧边栏
 
 好处：提升代码阅读效率，减少文件切换成本，适用于调试、评审和团队合作。
 
+使用示范:
+![alt text](media/example_usage.gif)
+
 ## 快速开始
 
 ## 安装

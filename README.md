@@ -12,6 +12,9 @@ Flow Comments helps you navigate code processes using simple comments. It create
 
 Benefits: Enhances code reading, reduces switching costs between files, and is ideal for debugging, reviews, and teamwork.
 
+example usage:
+![alt text](media/example_usage.gif)
+
 ## Quick Start
 
 ## Installation
@@ -38,7 +41,6 @@ Customize settings via VS Code Settings (Ctrl+,), search for `Flow Comments`. Fu
 - **flow.strictMode**: Strict mode: Enable error prompts (diagnostics not shown when off) (Default: true)
 - **flow.commentStyles**: Supported single-line comment starters (e.g., //, #, --) (Default: ["//", "#"])
 
-## Usage Guide
 
 ## Basic Usage
 
