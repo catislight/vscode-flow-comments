@@ -3,7 +3,7 @@
 import * as vscode from 'vscode';
 import { Graph, Node } from './models/types';
 import { scanWorkspace, updateGraphForFile } from './indexer/workspaceIndexer';
-import { IndexCache, computeCommentHash, hashString, upsertPersistentEntry } from './indexer/cache';
+import { IndexCache, computeCommentHash, hashString, upsertPersistentEntry, removePersistentEntries } from './indexer/cache';
 import { FlowTreeProvider } from './tree/flowTreeProvider';
 import { logger } from './utils/logger';
 import { buildDecorations } from './highlight/decorations';
@@ -99,6 +99,12 @@ export function activate(context: vscode.ExtensionContext) {
     // 增量更新：监听文档编辑事件，实时解析并更新图、装饰与诊断
     const onChange = vscode.workspace.onDidChangeTextDocument((e) => {
         const uri = e.document.uri.fsPath;
+        // 编辑发生时，清除该文档的行高亮，避免删除后残留
+        for (const ed of vscode.window.visibleTextEditors) {
+            if (ed.document.uri.fsPath === uri) {
+                ed.setDecorations(highlightDecoration, []);
+            }
+        }
         const cfg = vscode.workspace.getConfiguration('flow');
         const prefix = cfg.get<string>('prefix', 'flow');
         const text = e.document.getText();
@@ -109,11 +115,14 @@ export function activate(context: vscode.ExtensionContext) {
             logger.error('parse on change failed', err);
         }
         const newCommentHash = computeCommentHash(nodes);
+        const cachedBefore = indexCache.get(uri);
         currentGraph = updateGraphForFile(currentGraph, uri, nodes);
         indexCache.set(uri, { fileHash: hashString(text), commentHash: newCommentHash });
         treeProvider.setGraph(currentGraph);
         applyHintsForFile(uri, nodes, hintDecoration);
-        void upsertPersistentEntry({ file: uri, fileHash: hashString(text), commentHash: newCommentHash, nodes });
+        if (!cachedBefore || cachedBefore.commentHash !== newCommentHash) {
+            void upsertPersistentEntry({ file: uri, fileHash: hashString(text), commentHash: newCommentHash, nodes });
+        }
         applyDiagnosticsFromGraph(currentGraph, diagnosticCollection);
     });
     // 保存事件：立即重建该文件的节点并更新图
@@ -136,7 +145,9 @@ export function activate(context: vscode.ExtensionContext) {
         }
         treeProvider.setGraph(currentGraph);
         applyHintsForFile(uri, nodes, hintDecoration);
-        void upsertPersistentEntry({ file: uri, fileHash: hashString(text), commentHash: newCommentHash, nodes });
+        if (!cached || cached.commentHash !== newCommentHash) {
+            void upsertPersistentEntry({ file: uri, fileHash: hashString(text), commentHash: newCommentHash, nodes });
+        }
         applyDiagnosticsFromGraph(currentGraph, diagnosticCollection);
     });
     // 打开文档事件：在冷启动阶段及时解析新打开的文件以填充视图
@@ -170,6 +181,46 @@ export function activate(context: vscode.ExtensionContext) {
         applyDiagnosticsFromGraph(currentGraph, diagnosticCollection);
     });
     context.subscriptions.push(onEditors);
+
+    const onRename = vscode.workspace.onDidRenameFiles(async (e) => {
+        try {
+            for (const f of e.files) {
+                const oldPath = f.oldUri.fsPath;
+                const newPath = f.newUri.fsPath;
+                try {
+                    const buf = await vscode.workspace.fs.readFile(f.newUri);
+                    const text = new TextDecoder('utf-8').decode(buf);
+                    const cfg = vscode.workspace.getConfiguration('flow');
+                    const prefix = cfg.get<string>('prefix', 'flow');
+                    let nodes: Node[] = [];
+                    try { nodes = parser.parseText(text, newPath, prefix); } catch {}
+                    currentGraph = updateGraphForFile(currentGraph, oldPath, []);
+                    currentGraph = updateGraphForFile(currentGraph, newPath, nodes);
+                    indexCache.set(newPath, { fileHash: hashString(text), commentHash: computeCommentHash(nodes) });
+                    treeProvider.setGraph(currentGraph);
+                    applyHintsForFile(newPath, nodes, hintDecoration);
+                    await upsertPersistentEntry({ file: newPath, fileHash: hashString(text), commentHash: computeCommentHash(nodes), nodes });
+                    await removePersistentEntries([oldPath]);
+                } catch {}
+            }
+            applyDiagnosticsFromGraph(currentGraph, diagnosticCollection);
+        } catch {}
+    });
+    context.subscriptions.push(onRename);
+
+    const onDelete = vscode.workspace.onDidDeleteFiles(async (e) => {
+        try {
+            const files = e.files.map(u => u.fsPath);
+            for (const file of files) {
+                currentGraph = updateGraphForFile(currentGraph, file, []);
+            }
+            treeProvider.setGraph(currentGraph);
+            await removePersistentEntries(files);
+            applyHintsForVisibleEditorsFromGraph(currentGraph, hintDecoration);
+            applyDiagnosticsFromGraph(currentGraph, diagnosticCollection);
+        } catch {}
+    });
+    context.subscriptions.push(onDelete);
 
     const completionProvider = vscode.languages.registerCompletionItemProvider({ scheme: 'file' }, {
         provideCompletionItems(document, position) {

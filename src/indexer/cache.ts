@@ -104,3 +104,11 @@ export async function upsertPersistentEntry(entry: PersistEntry): Promise<void> 
   }
   await savePersistentIndex(list);
 }
+
+export async function removePersistentEntries(files: string[]): Promise<void> {
+  if (!files.length) { return; }
+  const list = await loadPersistentIndex();
+  const set = new Set(files);
+  const next = list.filter(e => !set.has(e.file));
+  await savePersistentIndex(next);
+}

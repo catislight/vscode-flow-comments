@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Graph, FeatureGraph, Node, orderToString, FeatureIssues } from '../models/types';
 import { sortGraph } from '../utils/sort';
-import { IndexCache, readAndHashFile, computeCommentHash, loadPersistentIndex, savePersistentIndex } from './cache';
+import { IndexCache, readAndHashFile, computeCommentHash, loadPersistentIndex, upsertPersistentEntry, removePersistentEntries } from './cache';
 import { parseText } from '../utils/parser';
 import { logger } from '../utils/logger';
 
@@ -21,35 +21,32 @@ export async function scanWorkspace(cache?: IndexCache): Promise<Graph> {
   const scanConcurrency = cfg.get<number>('scanConcurrency', 8);
 
   const persisted = await loadPersistentIndex();
-  if (persisted.length > 0) {
-    const features: Record<string, FeatureGraph> = {};
-    for (const e of persisted) {
-      cache?.set(e.file, { fileHash: e.fileHash, commentHash: e.commentHash });
-      for (const n of e.nodes) {
-        if (!features[n.feature]) {
-          features[n.feature] = { feature: n.feature, nodes: [] };
-        }
-        features[n.feature].nodes.push(n);
-      }
-    }
-    for (const f of Object.values(features)) {
-      f.issues = computeFeatureIssues(f);
-    }
-    const graph: Graph = { features };
-    return sortGraph(graph);
+  const persistedMap = new Map<string, Node[]>();
+  for (const e of persisted) {
+    cache?.set(e.file, { fileHash: e.fileHash, commentHash: e.commentHash });
+    persistedMap.set(e.file, e.nodes);
   }
 
   // 使用稳定 API：遍历文件并直接读取内容解析（无需打开编辑器文档）
   // 基于 includeGlobs 聚合待扫描文件集合
-  const excludeGlob = buildExcludeGlob(ignorePaths);
-  const uriSet = new Map<string, vscode.Uri>();
-  for (const inc of includeGlobs) {
-    const found = await vscode.workspace.findFiles(inc, excludeGlob);
-    for (const u of found) {
-      uriSet.set(u.fsPath, u);
+  let uris: vscode.Uri[] = [];
+  if (persistedMap.size > 0) {
+    const set = new Set<string>();
+    for (const file of persistedMap.keys()) {
+      set.add(file);
     }
+    uris = Array.from(set).map(f => vscode.Uri.file(f));
+  } else {
+    const excludeGlob = buildExcludeGlob(ignorePaths);
+    const uriSet = new Map<string, vscode.Uri>();
+    for (const inc of includeGlobs) {
+      const found = await vscode.workspace.findFiles(inc, excludeGlob);
+      for (const u of found) {
+        uriSet.set(u.fsPath, u);
+      }
+    }
+    uris = Array.from(uriSet.values());
   }
-  const uris = Array.from(uriSet.values());
 
   const features: Record<string, FeatureGraph> = {};
   const persistEntries: Array<{ file: string; fileHash: string; commentHash: string; nodes: Node[] }> = [];
@@ -98,8 +95,25 @@ export async function scanWorkspace(cache?: IndexCache): Promise<Graph> {
     f.issues = computeFeatureIssues(f);
   }
   const graph: Graph = { features };
-  if (persistEntries.length) {
-    await savePersistentIndex(persistEntries);
+  // 仅在注释层面发生变化或有文件删除时才更新持久索引
+  const changed: string[] = [];
+  for (const e of persistEntries) {
+    const old = persistedMap.get(e.file) || [];
+    const oldHash = computeCommentHash(old);
+    if (oldHash !== e.commentHash) {
+      await upsertPersistentEntry(e);
+      changed.push(e.file);
+    }
+  }
+  const scannedFiles = new Set(persistEntries.map(e => e.file));
+  const toDrop: string[] = [];
+  for (const file of persistedMap.keys()) {
+    if (!scannedFiles.has(file)) {
+      toDrop.push(file);
+    }
+  }
+  if (toDrop.length) {
+    await removePersistentEntries(toDrop);
   }
   return sortGraph(graph);
 }

@@ -166,6 +166,6 @@ function buildRevealCommand(n: Node): vscode.Command {
   return {
     command: 'flow-comments.reveal',
     title: 'Reveal',
-    arguments: [uri, n.line]
+    arguments: [uri, n.line, { feature: n.feature, role: n.role, order: n.order?.levels || [] }]
   };
 }
