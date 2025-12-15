@@ -12,6 +12,7 @@ import { applyHintsForFile, applyHintsForVisibleEditorsFromGraph } from './highl
 import { parser, indexer } from './services/api';
 import { registerCommands } from './commands/register';
 import { pinyin } from 'pinyin-pro';
+import { registerCompletionProvider } from './completion/provider';
 
 
 // This method is called when your extension is activated
@@ -222,72 +223,7 @@ export function activate(context: vscode.ExtensionContext) {
     });
     context.subscriptions.push(onDelete);
 
-    const completionProvider = vscode.languages.registerCompletionItemProvider({ scheme: 'file' }, {
-        provideCompletionItems(document, position) {
-            const cfg = vscode.workspace.getConfiguration('flow');
-            const prefix = cfg.get<string>('prefix', 'flow')!;
-            const styles = cfg.get<string[]>('commentStyles', ['//']);
-            const lineText = document.lineAt(position.line).text;
-            const before = lineText.slice(0, position.character);
-            const trimmedStart = before.replace(/^\s+/, '');
-            const styleHit = styles.find(s => trimmedStart.startsWith(s));
-            if (!styleHit) { return undefined; }
-            const afterStyle = trimmedStart.slice(styleHit.length).replace(/^\s+/, '');
-            const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const wants = afterStyle === '' || afterStyle.toLowerCase().startsWith(`${prefix.toLowerCase()}-`);
-            if (!wants) { return undefined; }
-
-            const features = Object.keys(currentGraph.features);
-            if (!features.length) { return undefined; }
-
-            const effectiveStyle = styleHit || (styles[0] || '//');
-            const leading = styleHit ? '' : `${effectiveStyle} `;
-            const mWhole = afterStyle.match(new RegExp(`^${esc(prefix)}(?:-[A-Za-z]*)?$`, 'i'));
-            const tokenLen = mWhole ? mWhole[0].length : 0;
-            const startCol = position.character - tokenLen;
-            const range = new vscode.Range(new vscode.Position(position.line, Math.max(startCol, 0)), position);
-
-            const matchKey = (() => {
-                const lower = afterStyle.toLowerCase();
-                if (lower === prefix.toLowerCase()) { return ''; }
-                if (lower.startsWith(`${prefix.toLowerCase()}-`)) { return lower.slice(prefix.length + 1); }
-                return null;
-            })();
-
-            function buildAbbr(name: string): string {
-                try {
-                    const arr = pinyin(name, { pattern: 'initial', type: 'array' }) as string[];
-                    return arr.map(s => (s || '').toLowerCase()).join('');
-                } catch {
-                    return name.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
-                }
-            }
-            function buildFull(name: string): string {
-                try {
-                    const arr = pinyin(name, { toneType: 'none', type: 'array' }) as string[];
-                    return arr.map(s => (s || '').toLowerCase()).join('');
-                } catch {
-                    return name.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
-                }
-            }
-            const items: vscode.CompletionItem[] = [];
-            for (const feature of features) {
-                const abbr = buildAbbr(feature);
-                const full = buildFull(feature);
-                if (matchKey !== null && matchKey.length > 0) {
-                    if (!(abbr.startsWith(matchKey) || full.startsWith(matchKey) || feature.toLowerCase().startsWith(matchKey))) { continue; }
-                }
-                const item = new vscode.CompletionItem(`${prefix}-${feature}`, vscode.CompletionItemKind.Keyword);
-                const fullKey = buildFull(feature);
-                item.filterText = `${prefix}-${fullKey}`;
-                item.insertText = `${leading}${prefix}-${feature}`;
-                (item as vscode.CompletionItem).range = range as any;
-                items.push(item);
-            }
-            return new vscode.CompletionList(items, false);
-        }
-    }, 'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','-','/',' ');
-    context.subscriptions.push(completionProvider);
+    registerCompletionProvider(context, () => currentGraph);
 }
 
 // This method is called when your extension is deactivated
