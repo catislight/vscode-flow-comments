@@ -59,7 +59,8 @@ export class FlowTreeProvider implements vscode.TreeDataProvider<FlowTreeItem> {
       // start
       for (const n of nodes) {
         if (n.role === 'start') {
-          const ti = new FlowTreeItem('start', 'start', element.feature, vscode.TreeItemCollapsibleState.None);
+          const label = `start${labelFromDesc(n)}`;
+          const ti = new FlowTreeItem(label, 'start', element.feature, vscode.TreeItemCollapsibleState.None);
           ti.node = n;
           ti.tooltip = buildTooltip(n);
           ti.command = buildRevealCommand(n);
@@ -97,7 +98,8 @@ export class FlowTreeProvider implements vscode.TreeDataProvider<FlowTreeItem> {
       // end
       for (const n of nodes) {
         if (n.role === 'end') {
-          const ti = new FlowTreeItem('end', 'end', element.feature, vscode.TreeItemCollapsibleState.None);
+          const label = `end${labelFromDesc(n)}`;
+          const ti = new FlowTreeItem(label, 'end', element.feature, vscode.TreeItemCollapsibleState.None);
           ti.node = n;
           ti.tooltip = buildTooltip(n);
           ti.command = buildRevealCommand(n);
