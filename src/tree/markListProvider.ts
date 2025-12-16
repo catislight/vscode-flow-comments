@@ -1,16 +1,25 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { Graph, Node } from '../models/types';
 
 class MarkItem extends vscode.TreeItem {
   node: Node;
   constructor(n: Node) {
-    const label = n.meta?.desc || '（无描述）';
+    const cfg = vscode.workspace.getConfiguration('flow');
+    const wf = vscode.workspace.workspaceFolders;
+    const root = wf && wf.length ? wf[0].uri.fsPath : undefined;
+    const rel = root ? path.relative(root, n.file) || n.file : n.file;
+    const levels = Math.max(1, cfg.get<number>('markPathLevels', 2));
+    const segments = rel.split(/[\\/]+/).filter(Boolean);
+    const showParts = segments.slice(Math.max(segments.length - levels, 0));
+    const shortPath = `${showParts.join('/')}`;
+    const label = n.meta?.desc || `${shortPath}:${n.line}`;
     super(label, vscode.TreeItemCollapsibleState.None);
     this.node = n;
-    const parts: string[] = [];
-    if (n.meta?.desc) { parts.push(n.meta.desc); }
-    parts.push(`${n.file}:${n.line}`);
-    this.tooltip = parts.join(' — ');
+    const tooltipParts: string[] = [];
+    if (n.meta?.desc) { tooltipParts.push(n.meta.desc); }
+    tooltipParts.push(`${shortPath}:${n.line}`);
+    this.tooltip = tooltipParts.join(' — ');
     this.command = {
       command: 'flow-comments.reveal',
       title: 'Reveal',
@@ -51,4 +60,3 @@ export class MarkListProvider implements vscode.TreeDataProvider<MarkItem> {
     return marks.map(n => new MarkItem(n));
   }
 }
-

@@ -19,8 +19,7 @@ function buildMarkRegex(markPrefix: string, styles: string[] = ['//']): RegExp {
   const p = markPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const escaped = styles.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   const opener = `(?:${escaped.join('|')})`;
-  // pattern: // mark-<desc>
-  return new RegExp(`^\\s*${opener}\\s*${p}-\\s*(.+)$`, 'i');
+  return new RegExp(`^\\s*${opener}\\s*${p}(?:-\\s*(.+))?$`, 'i');
 }
 
 function parseOrder(raw?: string): OrderParts | undefined {

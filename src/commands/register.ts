@@ -177,6 +177,7 @@ export function registerCommands(
         setGraph(g2);
       }
       treeProvider.setGraph(getGraph());
+      markProvider.setGraph(getGraph());
       applyHintsForVisibleEditorsFromGraph(getGraph(), decorations.hint);
       applyDiagnosticsFromGraph(getGraph());
       for (const ed of vscode.window.visibleTextEditors) {
@@ -258,6 +259,7 @@ export function registerCommands(
       }
       setGraph(g2);
       treeProvider.setGraph(g2);
+      markProvider.setGraph(g2);
       applyHintsForVisibleEditorsFromGraph(g2, decorations.hint);
       applyDiagnosticsFromGraph(g2);
       for (const ed of vscode.window.visibleTextEditors) {

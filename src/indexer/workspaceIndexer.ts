@@ -66,7 +66,7 @@ export async function scanWorkspace(cache?: IndexCache): Promise<Graph> {
         const buf = await vscode.workspace.fs.readFile(uri);
         const text = new TextDecoder('utf-8').decode(buf);
         // 快速前缀检测：文件不包含前缀则跳过（基于支持的注释样式）
-        const candidates = styles.flatMap(s => [ `${s} ${prefix}-`, `${s}${prefix}-`, `${s} ${markPrefix}-`, `${s}${markPrefix}-` ]);
+        const candidates = styles.flatMap(s => [ `${s} ${prefix}-`, `${s}${prefix}-`, `${s} ${markPrefix}-`, `${s}${markPrefix}-`, `${s} ${markPrefix}`, `${s}${markPrefix}` ]);
         if (!candidates.some(c => text.indexOf(c) !== -1)) {
           return;
         }

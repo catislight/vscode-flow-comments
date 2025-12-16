@@ -146,60 +146,71 @@
             "#"
           ],
           "description": "Supported single-line comment starters (e.g., //, #, --) (支持的单行注释起始符（例如 //、#、--）)"
+        },
+        "flow.markPathLevels": {
+          "type": "number",
+          "default": 3,
+          "minimum": 1,
+          "description": "Number of path segments to show for mark labels (from end). 显示在 Mark 面板中的路径层级数量（从末尾开始，包含文件名）"
         }
       }
     },
     "commands": [
       {
         "command": "flow-comments.refresh",
-        "title": "Flow Comments: Refresh",
+        "title": "Refresh",
         "category": "Flow Comments"
       },
       {
         "command": "flow-comments.reveal",
-        "title": "Flow Comments: Reveal",
+        "title": "Reveal",
         "category": "Flow Comments"
       },
       {
         "command": "flow-comments.scanActive",
-        "title": "Flow Comments: Scan Active File",
+        "title": "Scan Active File",
         "category": "Flow Comments"
       },
       {
         "command": "flow-comments.deleteFeature",
-        "title": "Flow Comments: Delete Flow",
+        "title": "Delete Flow",
         "category": "Flow Comments"
       },
       {
         "command": "flow-comments.deleteNode",
-        "title": "Flow Comments: Delete Item",
+        "title": "Delete Item",
         "category": "Flow Comments"
       }
     ],
-    "menus": {
-      "view/item/context": [
-        {
-          "command": "flow-comments.deleteFeature",
-          "when": "view == flowNavTree && viewItem == flowFeature",
-          "group": "navigation"
-        },
-        {
-          "command": "flow-comments.deleteNode",
-          "when": "view == flowNavTree && viewItem == flowStart",
-          "group": "navigation"
-        },
-        {
-          "command": "flow-comments.deleteNode",
-          "when": "view == flowNavTree && viewItem == flowEnd",
-          "group": "navigation"
-        },
-        {
-          "command": "flow-comments.deleteNode",
-          "when": "view == flowNavTree && viewItem == flowNode",
-          "group": "navigation"
-        }
-      ]
-    }
+      "menus": {
+        "view/item/context": [
+          {
+            "command": "flow-comments.deleteFeature",
+            "when": "view == flowNavTree && viewItem == flowFeature",
+            "group": "navigation"
+          },
+          {
+            "command": "flow-comments.deleteNode",
+            "when": "view == flowNavTree && viewItem == flowStart",
+            "group": "navigation"
+          },
+          {
+            "command": "flow-comments.deleteNode",
+            "when": "view == flowNavTree && viewItem == flowEnd",
+            "group": "navigation"
+          },
+          {
+            "command": "flow-comments.deleteNode",
+            "when": "view == flowNavTree && viewItem == flowNode",
+            "group": "navigation"
+          },
+          {
+            "command": "flow-comments.deleteNode",
+            "when": "view == flowNavMark && viewItem == flowMarkNode",
+            "group": "navigation"
+          }
+        ]
+      }
   },
   "scripts": {
     "vscode:prepublish": "pnpm run package",
