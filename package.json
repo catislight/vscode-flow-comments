@@ -3,7 +3,7 @@
   "displayName": "FlowComments",
   "description": "Sidebar flow tree from plain comments—click to jump and highlight code.",
   "icon": "media/logo.png",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "license": "GPL-3.0-only",
   "author": "catislight",
   "publisher": "catislight",
@@ -41,6 +41,23 @@
         }
       ]
     },
+    "views": {
+      "flowNav": [
+        {
+          "id": "flowNavTree",
+          "name": "Comment Tree",
+          "type": "tree",
+          "icon": "media/flow-activity.svg"
+        },
+        {
+          "id": "flowNavMark",
+          "name": "Comment Mark",
+          "type": "tree",
+          "visibility": "collapsed",
+          "icon": "media/flow-activity.svg"
+        }
+      ]
+    },
     "configuration": {
       "title": "Flow Comments",
       "properties": {
@@ -48,6 +65,11 @@
           "type": "string",
           "default": "flow",
           "description": "Comment prefix, e.g., // flow-login start (注释前缀，例如 // flow-登录 start）"
+        },
+        "flow.markPrefix": {
+          "type": "string",
+          "default": "mark",
+          "description": "Mark prefix for single-line notes, e.g., // mark-说明 （单行注释的 mark 前缀）"
         },
         "flow.includeGlobs": {
           "type": "array",
@@ -124,64 +146,71 @@
             "#"
           ],
           "description": "Supported single-line comment starters (e.g., //, #, --) (支持的单行注释起始符（例如 //、#、--）)"
+        },
+        "flow.markPathLevels": {
+          "type": "number",
+          "default": 3,
+          "minimum": 1,
+          "description": "Number of path segments to show for mark labels (from end). 显示在 Mark 面板中的路径层级数量（从末尾开始，包含文件名）"
         }
       }
     },
     "commands": [
       {
         "command": "flow-comments.refresh",
-        "title": "Flow Comments: Refresh"
+        "title": "Refresh",
+        "category": "Flow Comments"
       },
       {
         "command": "flow-comments.reveal",
-        "title": "Flow Comments: Reveal"
+        "title": "Reveal",
+        "category": "Flow Comments"
       },
       {
         "command": "flow-comments.scanActive",
-        "title": "Flow Comments: Scan Active File"
+        "title": "Scan Active File",
+        "category": "Flow Comments"
       },
       {
         "command": "flow-comments.deleteFeature",
-        "title": "Flow Comments: Delete Flow"
+        "title": "Delete Flow",
+        "category": "Flow Comments"
       },
       {
         "command": "flow-comments.deleteNode",
-        "title": "Flow Comments: Delete Item"
+        "title": "Delete Item",
+        "category": "Flow Comments"
       }
     ],
-    "views": {
-      "flowNav": [
-        {
-          "id": "flowNavTree",
-          "name": "Comments Tree",
-          "icon": "media/flow-activity.svg"
-        }
-      ]
-    },
-    "menus": {
-      "view/item/context": [
-        {
-          "command": "flow-comments.deleteFeature",
-          "when": "view == flowNavTree && viewItem == flowFeature",
-          "group": "navigation"
-        },
-        {
-          "command": "flow-comments.deleteNode",
-          "when": "view == flowNavTree && viewItem == flowStart",
-          "group": "navigation"
-        },
-        {
-          "command": "flow-comments.deleteNode",
-          "when": "view == flowNavTree && viewItem == flowEnd",
-          "group": "navigation"
-        },
-        {
-          "command": "flow-comments.deleteNode",
-          "when": "view == flowNavTree && viewItem == flowNode",
-          "group": "navigation"
-        }
-      ]
-    }
+      "menus": {
+        "view/item/context": [
+          {
+            "command": "flow-comments.deleteFeature",
+            "when": "view == flowNavTree && viewItem == flowFeature",
+            "group": "navigation"
+          },
+          {
+            "command": "flow-comments.deleteNode",
+            "when": "view == flowNavTree && viewItem == flowStart",
+            "group": "navigation"
+          },
+          {
+            "command": "flow-comments.deleteNode",
+            "when": "view == flowNavTree && viewItem == flowEnd",
+            "group": "navigation"
+          },
+          {
+            "command": "flow-comments.deleteNode",
+            "when": "view == flowNavTree && viewItem == flowNode",
+            "group": "navigation"
+          },
+          {
+            "command": "flow-comments.deleteNode",
+            "when": "view == flowNavMark && viewItem == flowMarkNode",
+            "group": "navigation"
+          }
+        ]
+      }
   },
   "scripts": {
     "vscode:prepublish": "pnpm run package",

@@ -5,6 +5,7 @@ import { Graph, Node } from './models/types';
 import { scanWorkspace, updateGraphForFile } from './indexer/workspaceIndexer';
 import { IndexCache, computeCommentHash, hashString, upsertPersistentEntry, removePersistentEntries } from './indexer/cache';
 import { FlowTreeProvider } from './tree/flowTreeProvider';
+import { MarkListProvider } from './tree/markListProvider';
 import { logger } from './utils/logger';
 import { buildDecorations } from './highlight/decorations';
 import { applyDiagnosticsFromGraph } from './diagnostics/apply';
@@ -12,12 +13,14 @@ import { applyHintsForFile, applyHintsForVisibleEditorsFromGraph } from './highl
 import { parser, indexer } from './services/api';
 import { registerCommands } from './commands/register';
 import { pinyin } from 'pinyin-pro';
+import { registerCompletionProvider } from './completion/provider';
 
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
     const treeProvider = new FlowTreeProvider();
+    const markProvider = new MarkListProvider();
     let currentGraph: Graph = { features: {} };
     const debounceTimers = new Map<string, NodeJS.Timeout>();
     const indexCache = new IndexCache();
@@ -30,8 +33,11 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.window.registerTreeDataProvider('flowNavTree', treeProvider);
     vscode.window.createTreeView('flowNavTree', { treeDataProvider: treeProvider });
+    vscode.window.registerTreeDataProvider('flowNavMark', markProvider);
+    vscode.window.createTreeView('flowNavMark', { treeDataProvider: markProvider });
     registerCommands(context, {
         treeProvider,
+        markProvider,
         getGraph: () => currentGraph,
         setGraph: (g: Graph) => { currentGraph = g; },
         indexCache,
@@ -46,7 +52,6 @@ export function activate(context: vscode.ExtensionContext) {
         hashString,
         computeCommentHash,
     });
-
     const onCfg = vscode.workspace.onDidChangeConfiguration((e) => {
         if (
             e.affectsConfiguration('flow.highlightBackground') ||
@@ -84,11 +89,13 @@ export function activate(context: vscode.ExtensionContext) {
     }, async () => {
         const graph = await scanWorkspace(indexCache);
         treeProvider.setGraph(graph);
+        markProvider.setGraph(graph);
         currentGraph = graph;
         if (!Object.keys(currentGraph.features).length) {
             setTimeout(async () => {
                 const g2 = await scanWorkspace(indexCache);
                 treeProvider.setGraph(g2);
+                markProvider.setGraph(g2);
                 currentGraph = g2;
             }, 100);
         }
@@ -119,6 +126,7 @@ export function activate(context: vscode.ExtensionContext) {
         currentGraph = updateGraphForFile(currentGraph, uri, nodes);
         indexCache.set(uri, { fileHash: hashString(text), commentHash: newCommentHash });
         treeProvider.setGraph(currentGraph);
+        markProvider.setGraph(currentGraph);
         applyHintsForFile(uri, nodes, hintDecoration);
         if (!cachedBefore || cachedBefore.commentHash !== newCommentHash) {
             void upsertPersistentEntry({ file: uri, fileHash: hashString(text), commentHash: newCommentHash, nodes });
@@ -144,6 +152,7 @@ export function activate(context: vscode.ExtensionContext) {
             indexCache.set(uri, { fileHash: hashString(text), commentHash: newCommentHash });
         }
         treeProvider.setGraph(currentGraph);
+        markProvider.setGraph(currentGraph);
         applyHintsForFile(uri, nodes, hintDecoration);
         if (!cached || cached.commentHash !== newCommentHash) {
             void upsertPersistentEntry({ file: uri, fileHash: hashString(text), commentHash: newCommentHash, nodes });
@@ -171,6 +180,7 @@ export function activate(context: vscode.ExtensionContext) {
         currentGraph = updateGraphForFile(currentGraph, uri, nodes);
         indexCache.set(uri, { fileHash: hashString(text), commentHash: newCommentHash });
         treeProvider.setGraph(currentGraph);
+        markProvider.setGraph(currentGraph);
         applyHintsForFile(uri, nodes, hintDecoration);
         void upsertPersistentEntry({ file: uri, fileHash: hashString(text), commentHash: newCommentHash, nodes });
         applyDiagnosticsFromGraph(currentGraph, diagnosticCollection);
@@ -215,6 +225,7 @@ export function activate(context: vscode.ExtensionContext) {
                 currentGraph = updateGraphForFile(currentGraph, file, []);
             }
             treeProvider.setGraph(currentGraph);
+            markProvider.setGraph(currentGraph);
             await removePersistentEntries(files);
             applyHintsForVisibleEditorsFromGraph(currentGraph, hintDecoration);
             applyDiagnosticsFromGraph(currentGraph, diagnosticCollection);
@@ -222,72 +233,7 @@ export function activate(context: vscode.ExtensionContext) {
     });
     context.subscriptions.push(onDelete);
 
-    const completionProvider = vscode.languages.registerCompletionItemProvider({ scheme: 'file' }, {
-        provideCompletionItems(document, position) {
-            const cfg = vscode.workspace.getConfiguration('flow');
-            const prefix = cfg.get<string>('prefix', 'flow')!;
-            const styles = cfg.get<string[]>('commentStyles', ['//']);
-            const lineText = document.lineAt(position.line).text;
-            const before = lineText.slice(0, position.character);
-            const trimmedStart = before.replace(/^\s+/, '');
-            const styleHit = styles.find(s => trimmedStart.startsWith(s));
-            if (!styleHit) { return undefined; }
-            const afterStyle = trimmedStart.slice(styleHit.length).replace(/^\s+/, '');
-            const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const wants = afterStyle === '' || afterStyle.toLowerCase().startsWith(`${prefix.toLowerCase()}-`);
-            if (!wants) { return undefined; }
-
-            const features = Object.keys(currentGraph.features);
-            if (!features.length) { return undefined; }
-
-            const effectiveStyle = styleHit || (styles[0] || '//');
-            const leading = styleHit ? '' : `${effectiveStyle} `;
-            const mWhole = afterStyle.match(new RegExp(`^${esc(prefix)}(?:-[A-Za-z]*)?$`, 'i'));
-            const tokenLen = mWhole ? mWhole[0].length : 0;
-            const startCol = position.character - tokenLen;
-            const range = new vscode.Range(new vscode.Position(position.line, Math.max(startCol, 0)), position);
-
-            const matchKey = (() => {
-                const lower = afterStyle.toLowerCase();
-                if (lower === prefix.toLowerCase()) { return ''; }
-                if (lower.startsWith(`${prefix.toLowerCase()}-`)) { return lower.slice(prefix.length + 1); }
-                return null;
-            })();
-
-            function buildAbbr(name: string): string {
-                try {
-                    const arr = pinyin(name, { pattern: 'initial', type: 'array' }) as string[];
-                    return arr.map(s => (s || '').toLowerCase()).join('');
-                } catch {
-                    return name.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
-                }
-            }
-            function buildFull(name: string): string {
-                try {
-                    const arr = pinyin(name, { toneType: 'none', type: 'array' }) as string[];
-                    return arr.map(s => (s || '').toLowerCase()).join('');
-                } catch {
-                    return name.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
-                }
-            }
-            const items: vscode.CompletionItem[] = [];
-            for (const feature of features) {
-                const abbr = buildAbbr(feature);
-                const full = buildFull(feature);
-                if (matchKey !== null && matchKey.length > 0) {
-                    if (!(abbr.startsWith(matchKey) || full.startsWith(matchKey) || feature.toLowerCase().startsWith(matchKey))) { continue; }
-                }
-                const item = new vscode.CompletionItem(`${prefix}-${feature}`, vscode.CompletionItemKind.Keyword);
-                const fullKey = buildFull(feature);
-                item.filterText = `${prefix}-${fullKey}`;
-                item.insertText = `${leading}${prefix}-${feature}`;
-                (item as vscode.CompletionItem).range = range as any;
-                items.push(item);
-            }
-            return new vscode.CompletionList(items, false);
-        }
-    }, 'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','-','/',' ');
-    context.subscriptions.push(completionProvider);
+    registerCompletionProvider(context, () => currentGraph);
 }
 
 // This method is called when your extension is deactivated

@@ -16,7 +16,8 @@ export interface Indexer {
 export const parser: Parser = {
   parseText(text: string, file: string, prefix: string): Node[] {
     const styles = vscode.workspace.getConfiguration('flow').get<string[]>('commentStyles', ['//']);
-    return parse(text, file, prefix, styles);
+    const markPrefix = vscode.workspace.getConfiguration('flow').get<string>('markPrefix', 'mark');
+    return parse(text, file, prefix, styles, markPrefix);
   }
 };
 export const indexer: Indexer = { scanWorkspace: scan, updateGraphForFile: update };

@@ -4,7 +4,7 @@ function roleWeight(role: Node['role']): number {
   if (role === 'start') {
     return 0;
   }
-  if (role === 'step') {
+  if (role === 'step' || role === 'title') {
     return 1;
   }
   return 2;

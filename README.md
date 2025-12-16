@@ -28,29 +28,33 @@ example usage:
 
 Customize settings via VS Code Settings (Ctrl+,), search for `Flow Comments`. Full list of options:
 
-- **flow.prefix**: Comment prefix, e.g., // flow-login start (Default: "flow")
-- **flow.includeGlobs**: File matching patterns (glob) for scanning, to speed up large repository scans (Default: ["**/*.{ts,tsx,js,jsx}", "**/*.{java,kt}", "**/*.{go}", "**/*.{py}"])
-- **flow.ignorePaths**: Directories to ignore during indexing (relative to workspace root) (Default: ["node_modules", "dist", ".git"])
-- **flow.maxFileSizeKB**: Maximum file size (KB) for parsing (Default: 1024)
-- **flow.scanConcurrency**: Scan concurrency (number of files processed concurrently), to improve large repository scan speed (Default: 8)
-- **flow.highlightBackground**: Background color for line highlighting after click jump (supports rgba/hex) (Default: "rgba(255, 193, 7, 0.16)")
-- **flow.highlightColor**: Text color within the highlighted line range (optional) (Default: "#1A1A1A")
-- **flow.tokenBackground**: Background color for prefix words in comments in default state (highlights only that word) (Default: "rgba(255, 193, 7, 0.28)")
-- **flow.tokenColor**: Text color that applies only to prefix words (to improve contrast) (Default: "#1A1A1A")
-- **flow.hintBackground**: Background color for flow comment lines in default state (Default: "rgba(255, 235, 59, 0.10)")
-- **flow.strictMode**: Strict mode: Enable error prompts (diagnostics not shown when off) (Default: true)
-- **flow.commentStyles**: Supported single-line comment starters (e.g., //, #, --) (Default: ["//", "#"])
+| Setting | Type | Default | Description |
+| --- | --- | --- | --- |
+| `flow.prefix` | string | `"flow"` | Comment prefix, e.g., `// flow-login start` |
+| `flow.markPrefix` | string | `"mark"` | Mark prefix for single-line notes, e.g., `// mark-desc` |
+| `flow.includeGlobs` | array<string> | `["**/*.{ts,tsx,js,jsx}", "**/*.{java,kt}", "**/*.{go}", "**/*.{py}"]` | File matching patterns (glob) for scanning to speed up large repo scans |
+| `flow.ignorePaths` | array<string> | `["node_modules", "dist", ".git"]` | Directories to ignore during indexing (relative to workspace root) |
+| `flow.maxFileSizeKB` | number | `1024` | Maximum file size (KB) for parsing |
+| `flow.scanConcurrency` | number | `8` | Number of files processed concurrently during scan |
+| `flow.highlightBackground` | string | `rgba(255, 193, 7, 0.16)` | Background color for line highlighting after click jump (rgba/hex) |
+| `flow.highlightColor` | string | `#1A1A1A` | Text color within the highlighted line range |
+| `flow.tokenBackground` | string | `rgba(255, 193, 7, 0.28)` | Background color for prefix words (highlights only that word) |
+| `flow.tokenColor` | string | `#1A1A1A` | Text color that applies only to prefix words (improves contrast) |
+| `flow.hintBackground` | string | `rgba(255, 235, 59, 0.10)` | Background color for flow comment lines in default state |
+| `flow.strictMode` | boolean | `true` | Strict mode: enable error prompts (diagnostics hidden when off) |
+| `flow.commentStyles` | array<string> | `["//", "#"]` | Supported single-line comment starters (e.g., `//`, `#`, `--`) |
+| `flow.markPathLevels` | number | `3` | Number of path segments to show for mark labels (from end; min 1) |
 
 
 ## Basic Usage
 
 1. Add comments in your code using the prefix (default: "flow").
-2. Mark the start with "start", steps with numbers, and end with "end".
+2. Mark the start with "start", steps with numbers, and end with "end". Descriptions are supported on `start` and `end`.
 
 Example:
 
 ```javascript
-// flow-login start
+// flow-login start User Login Flow
 function login() {
   // flow-login 1 Enter username
   const username = getUsername();
@@ -61,7 +65,7 @@ function login() {
   // flow-login 3 Validate
   validate(username, password);
 
-  // flow-login end
+  // flow-login end Completed
 }
 ```
 
@@ -90,6 +94,23 @@ function login() {
 }
 ```
 
+## Folding: Non-numbered Headings
+
+- Supports folding without numeric prefixes.
+- Parsing logic extracts keywords from headings to use as folding identifiers.
+- Backward compatible with numbered heading folding.
+
+Example:
+
+```javascript
+// flow-login start
+// flow-login-variable Password Status
+// ... code
+// flow-login end
+```
+
+In this example, `variable` is parsed as the folding identifier from the heading `// flow-login-variable Password Status`.
+
 
 ## Features
 
@@ -102,6 +123,27 @@ function login() {
 - **Configurable Comments**: Set comment styles (//, #, etc.) and ignore paths/files.
 - **Performance**: Optimizes for large projects with scanning controls.
 - **Persistent Index**: Saves scans to avoid re-parsing.
+- **Non-numbered Heading Folding**: Fold sections using parsed keywords without numeric prefixes.
+- **Enhanced Completions**: Feature-title completions strictly filtered to existing items.
+- **Improved Code Hints**: Fixes issues and enhances code hinting behavior.
+- **Quick Marks**: Single-line marking with `// mark-<desc>` and empty `// mark` auto path-line annotation.
+
+## Quick Marks
+
+- Use `// mark-<desc>` to quickly annotate important code sections.
+- Empty `// mark` generates an automatic path-line annotation.
+
+Examples:
+
+```javascript
+// mark-date processing function
+function processDate() {}
+
+// mark
+function compute() {
+  // auto path-line annotation is generated
+}
+```
 
 ## FAQ
 

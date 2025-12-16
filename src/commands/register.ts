@@ -8,6 +8,7 @@ export function registerCommands(
   context: vscode.ExtensionContext,
   deps: {
     treeProvider: FlowTreeProvider;
+    markProvider: { setGraph: (g: Graph) => void };
     getGraph: () => Graph;
     setGraph: (g: Graph) => void;
     indexCache: { get: (file: string) => { fileHash: string; commentHash: string } | undefined; set: (file: string, v: { fileHash: string; commentHash: string }) => void };
@@ -23,10 +24,10 @@ export function registerCommands(
     computeCommentHash: (nodes: Node[]) => string;
   }
 ) {
-  const { treeProvider, getGraph, setGraph, indexCache, decorations, applyHintsForFile, applyHintsForVisibleEditorsFromGraph, applyDiagnosticsFromGraph, parseText, scanWorkspace, updateGraphForFile, upsertPersistentEntry, hashString, computeCommentHash } = deps;
+  const { treeProvider, markProvider, getGraph, setGraph, indexCache, decorations, applyHintsForFile, applyHintsForVisibleEditorsFromGraph, applyDiagnosticsFromGraph, parseText, scanWorkspace, updateGraphForFile, upsertPersistentEntry, hashString, computeCommentHash } = deps;
 
 
-  const reveal = vscode.commands.registerCommand('flow-comments.reveal', async (uri: vscode.Uri, line: number, meta?: { feature?: string; role?: string; order?: number[] }) => {
+  const reveal = vscode.commands.registerCommand('flow-comments.reveal', async (uri: vscode.Uri, line: number, meta?: { feature?: string; role?: string; order?: number[]; desc?: string }) => {
     try {
       await vscode.workspace.fs.stat(uri);
     } catch {
@@ -34,14 +35,20 @@ export function registerCommands(
         return await scanWorkspace(indexCache as any);
       });
       treeProvider.setGraph(graph);
+      markProvider.setGraph(graph);
       setGraph(graph);
-      const feature = meta?.feature || '';
-      const ordStr = (meta?.order && meta.order.length) ? meta.order.join('.') : '';
       const role = (meta?.role as any) || undefined;
-      const fg = feature ? graph.features[feature] : undefined;
       let candidate: Node | undefined;
-      if (fg) {
-        candidate = fg.nodes.find(n => (!role || n.role === role) && orderToString(n.order) === ordStr) || fg.nodes.find(n => n.role === 'start');
+      if (role === 'mark') {
+        const desc = meta?.desc || '';
+        candidate = (graph.marks || []).find(n => (n.meta?.desc || '') === desc) || undefined;
+      } else {
+        const feature = meta?.feature || '';
+        const ordStr = (meta?.order && meta.order.length) ? meta.order.join('.') : '';
+        const fg = feature ? graph.features[feature] : undefined;
+        if (fg) {
+          candidate = fg.nodes.find(n => (!role || n.role === role) && orderToString(n.order) === ordStr) || fg.nodes.find(n => n.role === 'start');
+        }
       }
       if (candidate) {
         uri = vscode.Uri.file(candidate.file);
@@ -104,6 +111,7 @@ export function registerCommands(
       return await scanWorkspace(indexCache as any);
     });
     treeProvider.setGraph(graph);
+    markProvider.setGraph(graph);
     setGraph(graph);
     applyHintsForVisibleEditorsFromGraph(graph, decorations.hint);
     applyDiagnosticsFromGraph(graph);
@@ -169,6 +177,7 @@ export function registerCommands(
         setGraph(g2);
       }
       treeProvider.setGraph(getGraph());
+      markProvider.setGraph(getGraph());
       applyHintsForVisibleEditorsFromGraph(getGraph(), decorations.hint);
       applyDiagnosticsFromGraph(getGraph());
       for (const ed of vscode.window.visibleTextEditors) {
@@ -250,6 +259,7 @@ export function registerCommands(
       }
       setGraph(g2);
       treeProvider.setGraph(g2);
+      markProvider.setGraph(g2);
       applyHintsForVisibleEditorsFromGraph(g2, decorations.hint);
       applyDiagnosticsFromGraph(g2);
       for (const ed of vscode.window.visibleTextEditors) {

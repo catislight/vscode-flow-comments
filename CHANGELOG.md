@@ -4,6 +4,24 @@ All notable changes to the "Flow Comments" VS Code extension will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.3.0] - 2025-12-16
+
+### Features
+- Description support for `start` and `end` markers in flow comments.
+- Non-numbered heading folding:
+  - Adds folding rules that don't require numeric prefixes.
+  - Parses keywords from headings (e.g., "variable" from `// flow-login-variable Password Status`) to use as folding identifiers.
+  - Backward compatible with existing numbered heading folding.
+- Feature-title completions with strict filtering to existing items.
+- Single-line quick marks using `// mark-<desc>` for annotating key code sections.
+- Empty `// mark` comments auto-generate path-line annotations.
+
+### Changed
+- Refactor `provider.ts` into single-responsibility functions.
+
+### Fixed
+- Resolve code hinting issues and enhance code completion behavior.
+
 ## [v0.2.2] - 2025-12-10
 
 ### Changed

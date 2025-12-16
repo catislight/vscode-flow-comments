@@ -46,6 +46,16 @@ suite('Parser', () => {
     assert.deepStrictEqual(n!.order?.levels, [1,2]);
   });
 
+  test('parseLine title syntax', () => {
+    const n = parseLine('// flow-login-变量 密码状态', '/tmp/a.ts', 12);
+    assert.ok(n);
+    assert.strictEqual(n!.feature, 'login');
+    assert.strictEqual(n!.role, 'title');
+    assert.strictEqual(n!.order, undefined);
+    assert.strictEqual(n!.meta?.title, '变量');
+    assert.strictEqual(n!.meta?.desc, '密码状态');
+  });
+
   test('invalid tail after numeric order becomes part of desc; missing kind returns null', () => {
     const a = parseLine('// flow-Feat 1.a 不合法', '/tmp/a.ts', 8);
     assert.ok(a);
