@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Graph, Node, OrderParts } from '../models/types';
 
-type Kind = 'feature' | 'start' | 'end' | 'level';
+type Kind = 'feature' | 'start' | 'end' | 'level' | 'titleGroup' | 'titleItem';
 
 class FlowTreeItem extends vscode.TreeItem {
   kind: Kind;
@@ -95,6 +95,20 @@ export class FlowTreeProvider implements vscode.TreeDataProvider<FlowTreeItem> {
         }
         res.push(ti);
       }
+      // title groups（非序号标题语法）：按标题折叠
+      const titleMap = new Map<string, Node[]>();
+      for (const n of nodes) {
+        if (n.role === 'title') {
+          const name = (n.meta?.title || '未命名标题');
+          const arr = titleMap.get(name) || [];
+          arr.push(n);
+          titleMap.set(name, arr);
+        }
+      }
+      for (const [name, arr] of Array.from(titleMap.entries())) {
+        const ti = new FlowTreeItem(name, 'titleGroup', element.feature, vscode.TreeItemCollapsibleState.Collapsed);
+        res.push(ti);
+      }
       // end
       for (const n of nodes) {
         if (n.role === 'end') {
@@ -144,6 +158,22 @@ export class FlowTreeProvider implements vscode.TreeDataProvider<FlowTreeItem> {
       return Promise.resolve(res);
     }
 
+    if (element.kind === 'titleGroup') {
+      const res: FlowTreeItem[] = [];
+      const groupName = element.label || '';
+      const nodes = featureGraph.nodes.filter(n => n.role === 'title' && (n.meta?.title || '未命名标题') === groupName);
+      for (const n of nodes) {
+        const label = buildTitleItemLabel(n);
+        const ti = new FlowTreeItem(label, 'titleItem', element.feature, vscode.TreeItemCollapsibleState.None);
+        ti.node = n;
+        ti.tooltip = buildTooltip(n);
+        ti.command = buildRevealCommand(n);
+        ti.contextValue = 'flowNode';
+        res.push(ti);
+      }
+      return Promise.resolve(res);
+    }
+
     return Promise.resolve([]);
   }
 }
@@ -152,9 +182,14 @@ function labelFromDesc(n: Node): string {
   return n.meta?.desc ? ` ${n.meta?.desc}` : '';
 }
 
+function buildTitleItemLabel(n: Node): string {
+  const desc = n.meta?.desc || '（无描述）';
+  return `${desc}`;
+}
+
 function buildTooltip(n: Node): string {
   const parts: string[] = [];
-  const title = n.role === 'step' ? (n.order && n.order.levels ? n.order.levels.join('.') : '') : n.role;
+  const title = n.role === 'step' ? (n.order && n.order.levels ? n.order.levels.join('.') : '') : (n.role === 'title' ? '标题' : n.role);
   parts.push(title);
   if (n.meta?.desc) {
     parts.push(n.meta.desc);
