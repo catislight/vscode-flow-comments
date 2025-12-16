@@ -5,6 +5,7 @@ import { Graph, Node } from './models/types';
 import { scanWorkspace, updateGraphForFile } from './indexer/workspaceIndexer';
 import { IndexCache, computeCommentHash, hashString, upsertPersistentEntry, removePersistentEntries } from './indexer/cache';
 import { FlowTreeProvider } from './tree/flowTreeProvider';
+import { MarkListProvider } from './tree/markListProvider';
 import { logger } from './utils/logger';
 import { buildDecorations } from './highlight/decorations';
 import { applyDiagnosticsFromGraph } from './diagnostics/apply';
@@ -19,6 +20,7 @@ import { registerCompletionProvider } from './completion/provider';
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
     const treeProvider = new FlowTreeProvider();
+    const markProvider = new MarkListProvider();
     let currentGraph: Graph = { features: {} };
     const debounceTimers = new Map<string, NodeJS.Timeout>();
     const indexCache = new IndexCache();
@@ -31,8 +33,11 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.window.registerTreeDataProvider('flowNavTree', treeProvider);
     vscode.window.createTreeView('flowNavTree', { treeDataProvider: treeProvider });
+    vscode.window.registerTreeDataProvider('flowNavMark', markProvider);
+    vscode.window.createTreeView('flowNavMark', { treeDataProvider: markProvider });
     registerCommands(context, {
         treeProvider,
+        markProvider,
         getGraph: () => currentGraph,
         setGraph: (g: Graph) => { currentGraph = g; },
         indexCache,
@@ -47,7 +52,6 @@ export function activate(context: vscode.ExtensionContext) {
         hashString,
         computeCommentHash,
     });
-
     const onCfg = vscode.workspace.onDidChangeConfiguration((e) => {
         if (
             e.affectsConfiguration('flow.highlightBackground') ||
@@ -85,11 +89,13 @@ export function activate(context: vscode.ExtensionContext) {
     }, async () => {
         const graph = await scanWorkspace(indexCache);
         treeProvider.setGraph(graph);
+        markProvider.setGraph(graph);
         currentGraph = graph;
         if (!Object.keys(currentGraph.features).length) {
             setTimeout(async () => {
                 const g2 = await scanWorkspace(indexCache);
                 treeProvider.setGraph(g2);
+                markProvider.setGraph(g2);
                 currentGraph = g2;
             }, 100);
         }
@@ -120,6 +126,7 @@ export function activate(context: vscode.ExtensionContext) {
         currentGraph = updateGraphForFile(currentGraph, uri, nodes);
         indexCache.set(uri, { fileHash: hashString(text), commentHash: newCommentHash });
         treeProvider.setGraph(currentGraph);
+        markProvider.setGraph(currentGraph);
         applyHintsForFile(uri, nodes, hintDecoration);
         if (!cachedBefore || cachedBefore.commentHash !== newCommentHash) {
             void upsertPersistentEntry({ file: uri, fileHash: hashString(text), commentHash: newCommentHash, nodes });
@@ -145,6 +152,7 @@ export function activate(context: vscode.ExtensionContext) {
             indexCache.set(uri, { fileHash: hashString(text), commentHash: newCommentHash });
         }
         treeProvider.setGraph(currentGraph);
+        markProvider.setGraph(currentGraph);
         applyHintsForFile(uri, nodes, hintDecoration);
         if (!cached || cached.commentHash !== newCommentHash) {
             void upsertPersistentEntry({ file: uri, fileHash: hashString(text), commentHash: newCommentHash, nodes });
@@ -172,6 +180,7 @@ export function activate(context: vscode.ExtensionContext) {
         currentGraph = updateGraphForFile(currentGraph, uri, nodes);
         indexCache.set(uri, { fileHash: hashString(text), commentHash: newCommentHash });
         treeProvider.setGraph(currentGraph);
+        markProvider.setGraph(currentGraph);
         applyHintsForFile(uri, nodes, hintDecoration);
         void upsertPersistentEntry({ file: uri, fileHash: hashString(text), commentHash: newCommentHash, nodes });
         applyDiagnosticsFromGraph(currentGraph, diagnosticCollection);
@@ -216,6 +225,7 @@ export function activate(context: vscode.ExtensionContext) {
                 currentGraph = updateGraphForFile(currentGraph, file, []);
             }
             treeProvider.setGraph(currentGraph);
+            markProvider.setGraph(currentGraph);
             await removePersistentEntries(files);
             applyHintsForVisibleEditorsFromGraph(currentGraph, hintDecoration);
             applyDiagnosticsFromGraph(currentGraph, diagnosticCollection);

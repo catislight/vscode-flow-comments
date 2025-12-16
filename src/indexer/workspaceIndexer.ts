@@ -16,6 +16,7 @@ export async function scanWorkspace(cache?: IndexCache): Promise<Graph> {
   const cfg = vscode.workspace.getConfiguration('flow');
   const prefix = cfg.get<string>('prefix', 'flow');
   const styles = cfg.get<string[]>('commentStyles', ['//']);
+  const markPrefix = cfg.get<string>('markPrefix', 'mark');
   const ignorePaths = cfg.get<string[]>('ignorePaths', ['node_modules', 'dist', '.git']);
   const includeGlobs = cfg.get<string[]>('includeGlobs', ['**/*.{ts,tsx,js,jsx}', '**/*.{java,kt}', '**/*.{go}', '**/*.{py}']);
   const scanConcurrency = cfg.get<number>('scanConcurrency', 8);
@@ -49,6 +50,7 @@ export async function scanWorkspace(cache?: IndexCache): Promise<Graph> {
   }
 
   const features: Record<string, FeatureGraph> = {};
+  const marks: Node[] = [];
   const persistEntries: Array<{ file: string; fileHash: string; commentHash: string; nodes: Node[] }> = [];
   // 并发分批处理，快速前缀过滤避免逐行解析无关文件
   for (let i = 0; i < uris.length; i += scanConcurrency) {
@@ -64,11 +66,11 @@ export async function scanWorkspace(cache?: IndexCache): Promise<Graph> {
         const buf = await vscode.workspace.fs.readFile(uri);
         const text = new TextDecoder('utf-8').decode(buf);
         // 快速前缀检测：文件不包含前缀则跳过（基于支持的注释样式）
-        const candidates = styles.flatMap(s => [ `${s} ${prefix}-`, `${s}${prefix}-` ]);
+        const candidates = styles.flatMap(s => [ `${s} ${prefix}-`, `${s}${prefix}-`, `${s} ${markPrefix}-`, `${s}${markPrefix}-` ]);
         if (!candidates.some(c => text.indexOf(c) !== -1)) {
           return;
         }
-        const nodes = parseText(text, uri.fsPath, prefix, styles);
+        const nodes = parseText(text, uri.fsPath, prefix, styles, markPrefix);
         if (!nodes.length) {
           return;
         }
@@ -77,6 +79,10 @@ export async function scanWorkspace(cache?: IndexCache): Promise<Graph> {
         cache?.set(uri.fsPath, { fileHash, commentHash });
         persistEntries.push({ file: uri.fsPath, fileHash, commentHash, nodes });
         for (const n of nodes) {
+          if (n.role === 'mark') {
+            marks.push(n);
+            continue;
+          }
           if (!features[n.feature]) {
             features[n.feature] = { feature: n.feature, nodes: [] };
           }
@@ -94,7 +100,7 @@ export async function scanWorkspace(cache?: IndexCache): Promise<Graph> {
   for (const f of Object.values(features)) {
     f.issues = computeFeatureIssues(f);
   }
-  const graph: Graph = { features };
+  const graph: Graph = { features, marks };
   // 仅在注释层面发生变化或有文件删除时才更新持久索引
   const changed: string[] = [];
   for (const e of persistEntries) {
@@ -127,8 +133,15 @@ export function updateGraphForFile(graph: Graph, filePath: string, nodes: Node[]
       delete graph.features[feature];
     }
   }
+  // 移除旧的 mark 节点
+  graph.marks = (graph.marks || []).filter(n => n.file !== filePath);
   // 将新节点按 feature 聚合写入图结构
   for (const n of nodes) {
+    if (n.role === 'mark') {
+      graph.marks = graph.marks || [];
+      graph.marks.push(n);
+      continue;
+    }
     if (!graph.features[n.feature]) {
       graph.features[n.feature] = { feature: n.feature, nodes: [] };
     }

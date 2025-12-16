@@ -12,7 +12,15 @@ function buildTitleRegex(prefix: string, styles: string[] = ['//']): RegExp {
   const escaped = styles.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   const opener = `(?:${escaped.join('|')})`;
   // pattern: // flow-<feature>-<title> <desc>
-  return new RegExp(`^\\s*${opener}\\s*${p}-\\s*([^\s-][^\s]*)-([^\s].*)$`, 'i');
+  return new RegExp(`^\\s*${opener}\\s*${p}-\\s*([^\\s-][^\\s]*)-([^\\s].*)$`, 'i');
+}
+
+function buildMarkRegex(markPrefix: string, styles: string[] = ['//']): RegExp {
+  const p = markPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escaped = styles.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const opener = `(?:${escaped.join('|')})`;
+  // pattern: // mark-<desc>
+  return new RegExp(`^\\s*${opener}\\s*${p}-\\s*(.+)$`, 'i');
 }
 
 function parseOrder(raw?: string): OrderParts | undefined {
@@ -83,13 +91,24 @@ export function parseLine(line: string, file: string, lineNumber: number, prefix
   }
 }
 
-export function parseText(text: string, file: string, prefix = 'flow', styles: string[] = ['//']): Node[] {
+export function parseText(text: string, file: string, prefix = 'flow', styles: string[] = ['//'], markPrefix = 'mark'): Node[] {
   const nodes: Node[] = [];
   const lines = text.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
-    const n = parseLine(lines[i], file, i + 1, prefix, styles);
+    const line = lines[i];
+    const n = parseLine(line, file, i + 1, prefix, styles);
     if (n) {
       nodes.push(n);
+      continue;
+    }
+    const mr = line.match(buildMarkRegex(markPrefix, styles));
+    if (mr) {
+      const desc = (mr[1] || '').trim();
+      const role: Role = 'mark';
+      const feature = 'MARK';
+      const id = createNodeId(feature, role, undefined, file, i + 1);
+      const meta: Meta | undefined = desc ? { desc } : undefined;
+      nodes.push({ id, feature, role, file, line: i + 1, meta });
     }
   }
   return nodes;

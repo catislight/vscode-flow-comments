@@ -41,6 +41,23 @@
         }
       ]
     },
+    "views": {
+      "flowNav": [
+        {
+          "id": "flowNavTree",
+          "name": "Comment Tree",
+          "type": "tree",
+          "icon": "media/flow-activity.svg"
+        },
+        {
+          "id": "flowNavMark",
+          "name": "Comment Mark",
+          "type": "tree",
+          "visibility": "collapsed",
+          "icon": "media/flow-activity.svg"
+        }
+      ]
+    },
     "configuration": {
       "title": "Flow Comments",
       "properties": {
@@ -48,6 +65,11 @@
           "type": "string",
           "default": "flow",
           "description": "Comment prefix, e.g., // flow-login start (注释前缀，例如 // flow-登录 start）"
+        },
+        "flow.markPrefix": {
+          "type": "string",
+          "default": "mark",
+          "description": "Mark prefix for single-line notes, e.g., // mark-说明 （单行注释的 mark 前缀）"
         },
         "flow.includeGlobs": {
           "type": "array",
@@ -130,34 +152,30 @@
     "commands": [
       {
         "command": "flow-comments.refresh",
-        "title": "Flow Comments: Refresh"
+        "title": "Flow Comments: Refresh",
+        "category": "Flow Comments"
       },
       {
         "command": "flow-comments.reveal",
-        "title": "Flow Comments: Reveal"
+        "title": "Flow Comments: Reveal",
+        "category": "Flow Comments"
       },
       {
         "command": "flow-comments.scanActive",
-        "title": "Flow Comments: Scan Active File"
+        "title": "Flow Comments: Scan Active File",
+        "category": "Flow Comments"
       },
       {
         "command": "flow-comments.deleteFeature",
-        "title": "Flow Comments: Delete Flow"
+        "title": "Flow Comments: Delete Flow",
+        "category": "Flow Comments"
       },
       {
         "command": "flow-comments.deleteNode",
-        "title": "Flow Comments: Delete Item"
+        "title": "Flow Comments: Delete Item",
+        "category": "Flow Comments"
       }
     ],
-    "views": {
-      "flowNav": [
-        {
-          "id": "flowNavTree",
-          "name": "Comments Tree",
-          "icon": "media/flow-activity.svg"
-        }
-      ]
-    },
     "menus": {
       "view/item/context": [
         {

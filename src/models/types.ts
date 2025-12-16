@@ -1,4 +1,4 @@
-export type Role = 'start' | 'step' | 'end' | 'title';
+export type Role = 'start' | 'step' | 'end' | 'title' | 'mark';
 
 export type OrderKey = string;
 
@@ -36,6 +36,7 @@ export interface FeatureGraph {
 
 export interface Graph {
   features: Record<string, FeatureGraph>;
+  marks?: Node[];
 }
 
 export function orderToString(order?: OrderParts): OrderKey {
