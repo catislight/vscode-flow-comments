@@ -3,7 +3,7 @@
   "displayName": "FlowComments",
   "description": "Sidebar flow tree from plain comments—click to jump and highlight code.",
   "icon": "media/logo.png",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "license": "GPL-3.0-only",
   "author": "catislight",
   "publisher": "catislight",

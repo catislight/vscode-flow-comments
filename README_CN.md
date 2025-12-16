@@ -28,30 +28,34 @@ Flow Comments 通过简单注释帮助导航代码流程。在 VS Code 侧边栏
 
 通过 VS Code 设置 (Ctrl+,) 自定义，搜索 `Flow Comments`。完整选项列表：
 
-- **flow.prefix**：注释前缀，例如 // flow-login start（默认："flow"）
-- **flow.includeGlobs**：扫描的文件匹配模式（glob），用于加速大仓库扫描（默认：["**/*.{ts,tsx,js,jsx}", "**/*.{java,kt}", "**/*.{go}", "**/*.{py}"]）
-- **flow.ignorePaths**：索引时忽略的目录（相对工作区根）（默认：["node_modules", "dist", ".git"]）
-- **flow.maxFileSizeKB**：解析的最大文件大小（KB）（默认：1024）
-- **flow.scanConcurrency**：扫描并发度（一次并发处理的文件数量），用于提高大仓库扫描速度（默认：8）
-- **flow.highlightBackground**：点击跳转后行高亮的背景色（支持 rgba/hex）（默认："rgba(255, 193, 7, 0.16)"）
-- **flow.highlightColor**：行高亮范围内的文本颜色（可选）（默认："#1A1A1A"）
-- **flow.tokenBackground**：默认状态下注释中前缀单词的背景色（仅高亮该词）（默认："rgba(255, 193, 7, 0.28)"）
-- **flow.tokenColor**：仅对前缀单词生效的文本颜色（提高对比度）（默认："#1A1A1A"）
-- **flow.hintBackground**：默认状态下 flow 注释行的背景色（默认："rgba(255, 235, 59, 0.10)"）
-- **flow.strictMode**：严格模式：开启报错提示（关闭后不显示诊断）（默认：true）
-- **flow.commentStyles**：支持的单行注释起始符（例如 //、#、--）（默认：["//", "#"]）
+| 配置项 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `flow.prefix` | string | `"flow"` | 注释前缀，例如 `// flow-login start` |
+| `flow.markPrefix` | string | `"mark"` | 单行注释的标记前缀，例如 `// mark-说明` |
+| `flow.includeGlobs` | array<string> | `["**/*.{ts,tsx,js,jsx}", "**/*.{java,kt}", "**/*.{go}", "**/*.{py}"]` | 参与扫描的文件匹配模式（glob），用于加速大仓库扫描 |
+| `flow.ignorePaths` | array<string> | `["node_modules", "dist", ".git"]` | 索引时忽略的目录（相对工作区根） |
+| `flow.maxFileSizeKB` | number | `1024` | 参与解析的最大文件大小（KB） |
+| `flow.scanConcurrency` | number | `8` | 扫描并发度（一次并发处理的文件数量） |
+| `flow.highlightBackground` | string | `rgba(255, 193, 7, 0.16)` | 点击跳转后行高亮的背景色（支持 rgba/hex） |
+| `flow.highlightColor` | string | `#1A1A1A` | 行高亮范围内的文本颜色 |
+| `flow.tokenBackground` | string | `rgba(255, 193, 7, 0.28)` | 默认状态下注释中前缀单词的背景色（仅高亮该词） |
+| `flow.tokenColor` | string | `#1A1A1A` | 仅对前缀单词生效的文本颜色（提高对比度） |
+| `flow.hintBackground` | string | `rgba(255, 235, 59, 0.10)` | 默认状态下 flow 注释行的背景色 |
+| `flow.strictMode` | boolean | `true` | 严格模式：开启报错提示（关闭后不显示诊断） |
+| `flow.commentStyles` | array<string> | `["//", "#"]` | 支持的单行注释起始符（例如 `//`、`#`、`--`） |
+| `flow.markPathLevels` | number | `3` | Mark 面板路径层级数量（从末尾开始，包含文件名；最小值 1） |
 
 ## 使用指南
 
 ## 基本用法
 
 1. 使用前缀（默认："flow"）在代码中添加注释。
-2. 用 "start" 标记开始，用数字标记步骤，用 "end" 标记结束。
+2. 用 "start" 标记开始，用数字标记步骤，用 "end" 标记结束。`start` 与 `end` 支持描述文本。
 
 示例：
 
 ```javascript
-// flow-login start
+// flow-login start 用户登录流程
 function login() {
   // flow-login 1 输入用户名
   const username = getUsername();
@@ -62,7 +66,7 @@ function login() {
   // flow-login 3 验证
   validate(username, password);
 
-  // flow-login end
+  // flow-login end 已完成
 }
 ```
 
@@ -90,6 +94,23 @@ function login() {
 }
 ```
 
+## 折叠：无编号标题
+
+- 支持无需数字前缀的折叠标题。
+- 解析逻辑从标题中提取关键字作为折叠标识。
+- 与已有的数字编号折叠逻辑向后兼容。
+
+示例：
+
+```javascript
+// flow-login start
+// flow-login-variable Password Status
+// ... 代码
+// flow-login end
+```
+
+上述示例中，从 `// flow-login-variable Password Status` 提取关键字 `variable` 作为折叠标识。
+
 ## 特性
 
 - **可视化树导航**：将注释转为侧边栏树，便于概览。
@@ -101,6 +122,27 @@ function login() {
 - **可配置注释**：设置注释样式（//、# 等）和忽略路径/文件。
 - **性能**：针对大型项目优化扫描控制。
 - **持久索引**：保存扫描避免重新解析。
+- **无编号标题折叠**：通过解析关键字实现无数字前缀的折叠。
+- **增强补全**：严格过滤到已存在项的特性标题补全。
+- **改进代码提示**：修复提示问题并提升提示体验。
+- **快速标记**：支持 `// mark-<desc>` 单行标记与空 `// mark` 自动生成路径-行注解。
+
+## 快速标记（Marks）
+
+- 使用 `// mark-<desc>` 快速注释关键代码位置。
+- 空 `// mark` 将自动生成路径-行注解。
+
+示例：
+
+```javascript
+// mark-date 处理日期函数
+function processDate() {}
+
+// mark
+function compute() {
+  // 自动生成路径-行注解
+}
+```
 
 ## FAQ
 
