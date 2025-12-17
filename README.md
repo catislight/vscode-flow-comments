@@ -8,23 +8,23 @@
 
 ## Overview
 
-Flow Comments helps you navigate code processes using simple comments. It creates a visual tree in the VS Code sidebar, allowing you to jump instantly to code locations by clicking nodes. No code changes needed—just add comments to mark steps.
+Flow Comments helps you navigate code processes using simple comments. It creates a visual tree in the VS Code sidebar, allowing you to jump instantly to code locations by clicking nodes. Simply add comment marks to annotate code execution steps, and visualize the logic flow.
 
-Benefits: Enhances code reading, reduces switching costs between files, and is ideal for debugging, reviews, and teamwork.
+Key Benefits: significantly improves code reading efficiency, reduces file switching costs, and is especially suitable for source code reading, debugging, code reviews, and sharing business processes.
 
-example usage:
+Example Usage:
 ![alt text](media/example_usage.gif)
 
 ## Quick Start
 
-## Installation
+### Installation
 
 1. Open VS Code.
 2. Go to Extensions (Ctrl+Shift+X).
 3. Search for `Flow Comments` and install.
 4. Requires VS Code ^1.80.0 or later.
 
-## Configuration
+### Configuration
 
 Customize settings via VS Code Settings (Ctrl+,), search for `Flow Comments`. Full list of options:
 
@@ -45,8 +45,9 @@ Customize settings via VS Code Settings (Ctrl+,), search for `Flow Comments`. Fu
 | `flow.commentStyles` | array<string> | `["//", "#"]` | Supported single-line comment starters (e.g., `//`, `#`, `--`) |
 | `flow.markPathLevels` | number | `3` | Number of path segments to show for mark labels (from end; min 1) |
 
+## Usage Guide
 
-## Basic Usage
+### Basic Usage
 
 1. Add comments in your code using the prefix (default: "flow").
 2. Mark the start with "start", steps with numbers, and end with "end". Descriptions are supported on `start` and `end`.
@@ -72,10 +73,9 @@ function login() {
 3. Open the Flow Comments panel in VS Code sidebar.
 4. Click a node to jump to that code line.
 
-## Advanced: Hierarchies
+### Hierarchies
 
 Use dotted numbers to express sub-steps (e.g., "1.1", "1.2", "2.1.3"). Within the same flow, step numbers must be unique and they sort automatically by numeric hierarchy.
-
 
 Example:
 
@@ -94,7 +94,7 @@ function login() {
 }
 ```
 
-## Folding: Non-numbered Headings
+### Non-numbered Headings
 
 - Supports folding without numeric prefixes.
 - Parsing logic extracts keywords from headings to use as folding identifiers.
@@ -111,6 +111,22 @@ Example:
 
 In this example, `variable` is parsed as the folding identifier from the heading `// flow-login-variable Password Status`.
 
+### Quick Marks
+
+- Use `// mark-<desc>` to quickly annotate important code sections.
+- Empty `// mark` generates an automatic path-line annotation.
+
+Example:
+
+```javascript
+// mark-date processing function
+function processDate() {}
+
+// mark
+function compute() {
+  // auto path-line annotation is generated
+}
+```
 
 ## Features
 
@@ -126,34 +142,17 @@ In this example, `variable` is parsed as the folding identifier from the heading
 - **Non-numbered Heading Folding**: Fold sections using parsed keywords without numeric prefixes.
 - **Enhanced Completions**: Feature-title completions strictly filtered to existing items.
 - **Improved Code Hints**: Fixes issues and enhances code hinting behavior.
-- **Quick Marks**: Single-line marking with `// mark-<desc>` and empty `// mark` auto path-line annotation.
-
-## Quick Marks
-
-- Use `// mark-<desc>` to quickly annotate important code sections.
-- Empty `// mark` generates an automatic path-line annotation.
-
-Examples:
-
-```javascript
-// mark-date processing function
-function processDate() {}
-
-// mark
-function compute() {
-  // auto path-line annotation is generated
-}
-```
+- **Quick Marks**: Support `// mark-<desc>` single-line marks and empty `// mark` for auto path-line annotation.
 
 ## FAQ
 
-## Prerequisites
+### Prerequisites
 
 - Add comments with the prefix (default: "flow") to your code.
 - Supports Java, JavaScript, Python, Go, etc.
 - For large projects, adjust scanning settings.
 
-## Common Issues
+### Common Issues
 
 - **No tree nodes?** Check comments are added correctly, file types are included, and paths not ignored.
 - **Slow performance?** Limit file types, increase concurrency, reduce max file size.
