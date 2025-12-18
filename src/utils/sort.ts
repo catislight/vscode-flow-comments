@@ -45,9 +45,15 @@ export function compareNodes(a: Node, b: Node): number {
     return rw;
   }
   if (a.role === 'step' && b.role === 'step') {
-    return compareOrder(a.order, b.order);
+    const ord = compareOrder(a.order, b.order);
+    if (ord !== 0) {
+      return ord;
+    }
+    // If order is same (e.g. both undefined, or duplicates), sort by line
+    return a.line - b.line;
   }
-  return 0;
+  // For other roles, also sort by line
+  return a.line - b.line;
 }
 
 export function sortFeatureGraph(fg: FeatureGraph): FeatureGraph {

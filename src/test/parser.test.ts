@@ -62,9 +62,24 @@ suite('Parser', () => {
     assert.strictEqual(a!.role, 'step');
     assert.deepStrictEqual(a!.order?.levels, [1]);
     assert.strictEqual(a!.meta?.desc, '.a 不合法');
+    // Now supports no-order syntax
     const b = parseLine('// flow-Feat  描述缺少种类', '/tmp/a.ts', 9);
-    assert.strictEqual(b, null);
+    assert.ok(b);
+    assert.strictEqual(b!.feature, 'Feat');
+    assert.strictEqual(b!.role, 'step');
+    assert.strictEqual(b!.order, undefined);
+    assert.strictEqual(b!.meta?.desc, '描述缺少种类');
   });
+
+  test('parseLine no order syntax', () => {
+    const n = parseLine('// flow-login some desc', '/tmp/a.ts', 10);
+    assert.ok(n);
+    assert.strictEqual(n!.feature, 'login');
+    assert.strictEqual(n!.role, 'step');
+    assert.strictEqual(n!.order, undefined);
+    assert.strictEqual(n!.meta?.desc, 'some desc');
+  });
+
 
   test('parseText collects multiple lines and ignores non-matching', () => {
     const text = [

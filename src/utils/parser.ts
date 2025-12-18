@@ -22,6 +22,14 @@ function buildMarkRegex(markPrefix: string, styles: string[] = ['//']): RegExp {
   return new RegExp(`^\\s*${opener}\\s*${p}(?:-\\s*(.+))?$`, 'i');
 }
 
+function buildNoOrderRegex(prefix: string, styles: string[] = ['//']): RegExp {
+  const p = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escaped = styles.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const opener = `(?:${escaped.join('|')})`;
+  // pattern: // flow-<feature> <desc>
+  return new RegExp(`^\\s*${opener}\\s*${p}-\\s*([^\\s]+)\\s+(.+)$`, 'i');
+}
+
 function parseOrder(raw?: string): OrderParts | undefined {
   if (!raw) {
     return undefined;
@@ -71,6 +79,17 @@ export function parseLine(line: string, file: string, lineNumber: number, prefix
   const newer = buildNewRegex(prefix, styles);
   const m = line.match(newer);
   if (!m) {
+    // fallback to no-order syntax
+    const noOrderRe = buildNoOrderRegex(prefix, styles);
+    const mNoOrder = line.match(noOrderRe);
+    if (mNoOrder) {
+      const feature = mNoOrder[1].trim();
+      const desc = mNoOrder[2].trim();
+      const role: Role = 'step';
+      const id = createNodeId(feature, role, undefined, file, lineNumber);
+      const meta: Meta = { desc };
+      return { id, feature, role, order: undefined, file, line: lineNumber, meta };
+    }
     return null;
   }
   const feature = m[1].trim();
