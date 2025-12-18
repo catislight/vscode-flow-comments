@@ -95,6 +95,18 @@ export class FlowTreeProvider implements vscode.TreeDataProvider<FlowTreeItem> {
         }
         res.push(ti);
       }
+      // unordered steps (no levels)
+      for (const n of nodes) {
+        if (n.role === 'step' && (!n.order || !n.order.levels || n.order.levels.length === 0)) {
+          const label = n.meta?.desc || '（无描述）';
+          const ti = new FlowTreeItem(label, 'level', element.feature, vscode.TreeItemCollapsibleState.None);
+          ti.node = n;
+          ti.tooltip = buildTooltip(n);
+          ti.command = buildRevealCommand(n);
+          ti.contextValue = 'flowNode';
+          res.push(ti);
+        }
+      }
       // title groups（非序号标题语法）：按标题折叠
       const titleMap = new Map<string, Node[]>();
       for (const n of nodes) {
