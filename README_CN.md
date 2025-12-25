@@ -31,7 +31,7 @@ Flow Comments 旨在通过简洁的注释标记，帮助开发者快速梳理和
 | 配置项 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
 | `flow.prefix` | string | `"flow"` | 注释前缀，例如 `// flow-login start` |
-| `flow.markPrefix` | string | `"mark"` | 单行注释的标记前缀，例如 `// mark-说明` |
+| `flow.markPrefix` | string | `"mark"` | 单行注释的标记前缀，例如 `// mark 说明` |
 | `flow.includeGlobs` | array<string> | `["**/*.{ts,tsx,js,jsx}", "**/*.{java,kt}", "**/*.{go}", "**/*.{py}"]` | 参与扫描的文件匹配模式（glob），用于加速大仓库扫描 |
 | `flow.ignorePaths` | array<string> | `["node_modules", "dist", ".git"]` | 索引时忽略的目录（相对工作区根） |
 | `flow.maxFileSizeKB` | number | `1024` | 参与解析的最大文件大小（KB） |
@@ -113,13 +113,13 @@ function login() {
 
 ### 快速标记（Marks）
 
-- 使用 `// mark-<desc>` 快速注释关键代码位置。
+- 使用 `// mark <desc>` 快速注释关键代码位置。
 - 空 `// mark` 将自动生成路径-行注解。
 
 示例：
 
 ```javascript
-// mark-date 处理日期函数
+// mark date 处理日期函数
 function processDate() {}
 
 // mark
@@ -143,7 +143,7 @@ function compute() {
 - **无编号标题折叠**：通过解析关键字实现无数字前缀的折叠。
 - **增强补全**：严格过滤到已存在项的特性标题补全。
 - **改进代码提示**：修复提示问题并提升提示体验。
-- **快速标记**：支持 `// mark-<desc>` 单行标记与空 `// mark` 自动生成路径-行注解。
+- **快速标记**：支持 `// mark <desc>` 单行标记与空 `// mark` 自动生成路径-行注解。
 
 
 ## FAQ

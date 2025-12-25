@@ -31,7 +31,7 @@ Customize settings via VS Code Settings (Ctrl+,), search for `Flow Comments`. Fu
 | Setting | Type | Default | Description |
 | --- | --- | --- | --- |
 | `flow.prefix` | string | `"flow"` | Comment prefix, e.g., `// flow-login start` |
-| `flow.markPrefix` | string | `"mark"` | Mark prefix for single-line notes, e.g., `// mark-desc` |
+| `flow.markPrefix` | string | `"mark"` | Mark prefix for single-line notes, e.g., `// mark desc` |
 | `flow.includeGlobs` | array<string> | `["**/*.{ts,tsx,js,jsx}", "**/*.{java,kt}", "**/*.{go}", "**/*.{py}"]` | File matching patterns (glob) for scanning to speed up large repo scans |
 | `flow.ignorePaths` | array<string> | `["node_modules", "dist", ".git"]` | Directories to ignore during indexing (relative to workspace root) |
 | `flow.maxFileSizeKB` | number | `1024` | Maximum file size (KB) for parsing |
@@ -113,13 +113,13 @@ In this example, `variable` is parsed as the folding identifier from the heading
 
 ### Quick Marks
 
-- Use `// mark-<desc>` to quickly annotate important code sections.
+- Use `// mark <desc>` to quickly annotate important code sections.
 - Empty `// mark` generates an automatic path-line annotation.
 
 Example:
 
 ```javascript
-// mark-date processing function
+// mark date processing function
 function processDate() {}
 
 // mark
@@ -142,7 +142,7 @@ function compute() {
 - **Non-numbered Heading Folding**: Fold sections using parsed keywords without numeric prefixes.
 - **Enhanced Completions**: Feature-title completions strictly filtered to existing items.
 - **Improved Code Hints**: Fixes issues and enhances code hinting behavior.
-- **Quick Marks**: Support `// mark-<desc>` single-line marks and empty `// mark` for auto path-line annotation.
+- **Quick Marks**: Support `// mark <desc>` single-line marks and empty `// mark` for auto path-line annotation.
 
 ## FAQ
 

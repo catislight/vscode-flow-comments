@@ -88,11 +88,17 @@ suite('Parser', () => {
       '// flow-Auth 1 登录入口',
       '/* some other comment */',
       '// flow-Auth end',
+      '// mark 关键点',
+      '// mark',
     ].join('\n');
     const nodes = parseText(text, '/x.ts');
-    assert.strictEqual(nodes.length, 3);
+    assert.strictEqual(nodes.length, 5);
     assert.strictEqual(nodes[0].role, 'start');
     assert.strictEqual(nodes[1].role, 'step');
     assert.strictEqual(nodes[2].role, 'end');
+    assert.strictEqual(nodes[3].role, 'mark');
+    assert.strictEqual(nodes[3].meta?.desc, '关键点');
+    assert.strictEqual(nodes[4].role, 'mark');
+    assert.strictEqual(nodes[4].meta, undefined);
   });
 });

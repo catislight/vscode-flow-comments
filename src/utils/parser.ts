@@ -19,7 +19,8 @@ function buildMarkRegex(markPrefix: string, styles: string[] = ['//']): RegExp {
   const p = markPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const escaped = styles.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   const opener = `(?:${escaped.join('|')})`;
-  return new RegExp(`^\\s*${opener}\\s*${p}(?:-\\s*(.+))?$`, 'i');
+  // match // mark desc or // mark
+  return new RegExp(`^\\s*${opener}\\s*${p}(?:\\s+(.+))?$`, 'i');
 }
 
 function buildNoOrderRegex(prefix: string, styles: string[] = ['//']): RegExp {
