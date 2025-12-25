@@ -2,7 +2,7 @@
   "name": "vscode-flow-comments",
   "displayName": "FlowComments",
   "description": "Sidebar flow tree from plain comments—click to jump and highlight code.",
-  "icon": "media/logo.svg",
+  "icon": "media/logo.png",
   "version": "0.3.3",
   "license": "GPL-3.0-only",
   "author": "catislight",
