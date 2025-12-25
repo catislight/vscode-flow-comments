@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="media/logo.png" alt="logo" />
+  <img src="media/logo.svg" width="128" height="128" alt="logo" />
 </p>
 
 <h1 align="center">Flow Comments</h1>

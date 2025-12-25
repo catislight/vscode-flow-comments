@@ -2,8 +2,8 @@
   "name": "vscode-flow-comments",
   "displayName": "FlowComments",
   "description": "Sidebar flow tree from plain comments—click to jump and highlight code.",
-  "icon": "media/logo.png",
-  "version": "0.3.2",
+  "icon": "media/logo.svg",
+  "version": "0.3.3",
   "license": "GPL-3.0-only",
   "author": "catislight",
   "publisher": "catislight",
@@ -37,7 +37,7 @@
         {
           "id": "flowNav",
           "title": "Flow Comments",
-          "icon": "media/flow-activity.svg"
+          "icon": "media/activity_logo.svg"
         }
       ]
     },
@@ -47,14 +47,14 @@
           "id": "flowNavTree",
           "name": "Comment Tree",
           "type": "tree",
-          "icon": "media/flow-activity.svg"
+          "icon": "media/activity_logo.svg"
         },
         {
           "id": "flowNavMark",
           "name": "Comment Mark",
           "type": "tree",
           "visibility": "collapsed",
-          "icon": "media/flow-activity.svg"
+          "icon": "media/activity_logo.svg"
         }
       ]
     },
