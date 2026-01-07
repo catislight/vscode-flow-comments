@@ -12,15 +12,14 @@ function buildTitleRegex(prefix: string, styles: string[] = ['//']): RegExp {
   const escaped = styles.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   const opener = `(?:${escaped.join('|')})`;
   // pattern: // flow-<feature>-<title> <desc>
-  return new RegExp(`^\\s*${opener}\\s*${p}-\\s*([^\\s-][^\\s]*)-([^\\s].*)$`, 'i');
+  return new RegExp(`^\\s*${opener}\\s*${p}-\\s*([^\\s-]+)-([^\\x00-\\x7F][^\\s]*)\\s*(.*)$`, 'i');
 }
 
 function buildMarkRegex(markPrefix: string, styles: string[] = ['//']): RegExp {
   const p = markPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const escaped = styles.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   const opener = `(?:${escaped.join('|')})`;
-  // match // mark desc or // mark
-  return new RegExp(`^\\s*${opener}\\s*${p}(?:\\s+(.+))?$`, 'i');
+  return new RegExp(`^\\s*${opener}\\s*${p}(?:-\\s*(.+))?$`, 'i');
 }
 
 function buildNoOrderRegex(prefix: string, styles: string[] = ['//']): RegExp {
@@ -62,24 +61,24 @@ function parseMeta(raw?: string): Meta | undefined {
 }
 
 export function parseLine(line: string, file: string, lineNumber: number, prefix = 'flow', styles: string[] = ['//']): Node | null {
-  // try title syntax first
-  const titleRe = buildTitleRegex(prefix, styles);
-  const mt = line.match(titleRe);
-  if (mt) {
-    const feature = mt[1].trim();
-    const title = (mt[2] || '').trim().split(/\s+/)[0];
-    const desc = (mt[2] || '').trim().slice(title.length).trim();
-    const role: Role = 'title' as Role;
-    const id = createNodeId(feature, role, undefined, file, lineNumber);
-    const meta: Meta = {};
-    if (title) { meta.title = title; }
-    if (desc) { meta.desc = desc; }
-    return { id, feature, role, order: undefined, file, line: lineNumber, meta };
-  }
-  // fallback to original syntax
+  // prefer numeric/start/end syntax to avoid misclassifying hyphenated features as titles
   const newer = buildNewRegex(prefix, styles);
   const m = line.match(newer);
   if (!m) {
+    // then try title syntax
+    const titleRe = buildTitleRegex(prefix, styles);
+    const mt = line.match(titleRe);
+    if (mt) {
+      const feature = mt[1].trim();
+      const title = (mt[2] || '').trim();
+      const desc = (mt[3] || '').trim();
+      const role: Role = 'title' as Role;
+      const id = createNodeId(feature, role, undefined, file, lineNumber);
+      const meta: Meta = {};
+      if (title) { meta.title = title; }
+      if (desc) { meta.desc = desc; }
+      return { id, feature, role, order: undefined, file, line: lineNumber, meta };
+    }
     // fallback to no-order syntax
     const noOrderRe = buildNoOrderRegex(prefix, styles);
     const mNoOrder = line.match(noOrderRe);

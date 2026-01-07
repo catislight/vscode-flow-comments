@@ -80,6 +80,27 @@ suite('Parser', () => {
     assert.strictEqual(n!.meta?.desc, 'some desc');
   });
 
+  test('parseLine hyphenated feature steps', () => {
+    const a = parseLine('// flow-login-request 1 请求阶段', '/tmp/a.ts', 11);
+    assert.ok(a);
+    assert.strictEqual(a!.feature, 'login-request');
+    assert.strictEqual(a!.role, 'step');
+    assert.deepStrictEqual(a!.order?.levels, [1]);
+    const b = parseLine('//flow-login-request 1.1 明细', '/tmp/a.ts', 12);
+    assert.ok(b);
+    assert.strictEqual(b!.feature, 'login-request');
+    assert.strictEqual(b!.role, 'step');
+    assert.deepStrictEqual(b!.order?.levels, [1,1]);
+  });
+
+  test('parseLine hyphenated feature without order is a step', () => {
+    const n = parseLine('// flow-login-request 一段描述', '/tmp/a.ts', 13);
+    assert.ok(n);
+    assert.strictEqual(n!.feature, 'login-request');
+    assert.strictEqual(n!.role, 'step');
+    assert.strictEqual(n!.order, undefined);
+    assert.strictEqual(n!.meta?.desc, '一段描述');
+  });
 
   test('parseText collects multiple lines and ignores non-matching', () => {
     const text = [
@@ -88,7 +109,7 @@ suite('Parser', () => {
       '// flow-Auth 1 登录入口',
       '/* some other comment */',
       '// flow-Auth end',
-      '// mark 关键点',
+      '// mark-关键点',
       '// mark',
     ].join('\n');
     const nodes = parseText(text, '/x.ts');
