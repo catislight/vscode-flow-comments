@@ -6,53 +6,29 @@
 
 <p align="center"><a href="./README_CN.md">中文</a> | English</p>
 
-## Overview
 
-Flow Comments helps you navigate code processes using simple comments. It creates a visual tree in the VS Code sidebar, allowing you to jump instantly to code locations by clicking nodes. Simply add comment marks to annotate code execution steps, and visualize the logic flow.
+## What is Flow Comments?
 
-Key Benefits: significantly improves code reading efficiency, reduces file switching costs, and is especially suitable for source code reading, debugging, code reviews, and sharing business processes.
+Flow Comments is a VS Code extension designed to clarify code execution flow. No complex configuration needed—just add simple comment markers to your code, and the extension automatically generates a structured flow tree in the sidebar, helping you quickly grasp code logic and eliminate tedious file searching.
 
-Example Usage:
+**Use Cases:** Source code reading, debugging, code reviews, team business process sharing.
+
+**Demo:**
 ![alt text](media/example_usage.gif)
 
-## Quick Start
+## Quick Start (5 Minutes)
 
-### Installation
+### Step 1: Install
 
-1. Open VS Code.
-2. Go to Extensions (Ctrl+Shift+X).
-3. Search for `Flow Comments` and install.
-4. Requires VS Code ^1.80.0 or later.
+1. Open VS Code and press `Ctrl+Shift+X` to open Extensions.
+2. Search for `Flow Comments` and click Install.
+3. Requires VS Code ≥ 1.80.0.
 
-### Configuration
+### Step 2: Add Flow Comments (Core)
 
-Customize settings via VS Code Settings (Ctrl+,), search for `Flow Comments`. Full list of options:
+Use the default prefix `flow` to mark flows. Support "start/step/end" three-part marking with nestable step levels.
 
-| Setting | Type | Default | Description |
-| --- | --- | --- | --- |
-| `flow.prefix` | string | `"flow"` | Comment prefix, e.g., `// flow-login start` |
-| `flow.markPrefix` | string | `"mark"` | Mark prefix for single-line notes, e.g., `// mark desc` |
-| `flow.includeGlobs` | array<string> | `["**/*.{ts,tsx,js,jsx}", "**/*.{java,kt}", "**/*.{go}", "**/*.{py}"]` | File matching patterns (glob) for scanning to speed up large repo scans |
-| `flow.ignorePaths` | array<string> | `["node_modules", "dist", ".git"]` | Directories to ignore during indexing (relative to workspace root) |
-| `flow.maxFileSizeKB` | number | `1024` | Maximum file size (KB) for parsing |
-| `flow.scanConcurrency` | number | `8` | Number of files processed concurrently during scan |
-| `flow.highlightBackground` | string | `rgba(255, 193, 7, 0.16)` | Background color for line highlighting after click jump (rgba/hex) |
-| `flow.highlightColor` | string | `#1A1A1A` | Text color within the highlighted line range |
-| `flow.tokenBackground` | string | `rgba(255, 193, 7, 0.28)` | Background color for prefix words (highlights only that word) |
-| `flow.tokenColor` | string | `#1A1A1A` | Text color that applies only to prefix words (improves contrast) |
-| `flow.hintBackground` | string | `rgba(255, 235, 59, 0.10)` | Background color for flow comment lines in default state |
-| `flow.strictMode` | boolean | `true` | Strict mode: enable error prompts (diagnostics hidden when off) |
-| `flow.commentStyles` | array<string> | `["//", "#"]` | Supported single-line comment starters (e.g., `//`, `#`, `--`) |
-| `flow.markPathLevels` | number | `3` | Number of path segments to show for mark labels (from end; min 1) |
-
-## Usage Guide
-
-### Basic Usage
-
-1. Add comments in your code using the prefix (default: "flow").
-2. Mark the start with "start", steps with numbers, and end with "end". Descriptions are supported on `start` and `end`.
-
-Example:
+**Basic Example (JavaScript):**
 
 ```javascript
 // flow-login start User Login Flow
@@ -64,20 +40,25 @@ function login() {
   const password = getPassword();
 
   // flow-login 3 Validate
+  // flow-login 3.1 Check format
+  // flow-login 3.2 Verify credentials
   validate(username, password);
 
-  // flow-login end Completed
+  // flow-login end Login Complete
 }
 ```
 
-3. Open the Flow Comments panel in VS Code sidebar.
-4. Click a node to jump to that code line.
+### Step 3: View & Use Flow Tree
 
-### Hierarchies
+1. Save your code—the extension automatically scans and generates the flow tree.
+2. Open the Flow Comments panel in the VS Code sidebar.
+3. Click any tree node to jump directly to that code line (auto-highlighted).
 
-Use dotted numbers to express sub-steps (e.g., "1.1", "1.2", "2.1.3"). Within the same flow, step numbers must be unique and they sort automatically by numeric hierarchy.
+## Advanced Usage
 
-Example:
+### 1. Hierarchical Steps
+
+Use "number.number" to express sub-steps. The extension automatically displays them hierarchically, clearly distinguishing main flow from branches.
 
 ```javascript
 // flow-login start
@@ -87,79 +68,101 @@ function login() {
   // flow-login 1.2 Enter password
 
   // flow-login 2 Validate
-  // flow-login 2.1 Check format
-  // flow-login 2.2 Verify credentials
+  // flow-login 2.1 Frontend format check
+  // flow-login 2.2 Backend API check
 
   // flow-login end
 }
 ```
 
-### Non-numbered Headings
+### 2. Non-numbered Titles
 
-- Supports folding without numeric prefixes.
-- Parsing logic extracts keywords from headings to use as folding identifiers.
-- Backward compatible with numbered heading folding.
-
-Example:
+No numeric prefix needed. Use "non-ASCII character prefix keywords" as fold identifiers to avoid conflicts with sub-features, while maintaining compatibility with numbered logic.
 
 ```javascript
 // flow-login start
-// flow-login-variable Password Status
-// ... code
+// flow-login-变量 Password State Management
+let passwordStatus = 'unverified';
+// ... related code
 // flow-login end
 ```
 
-In this example, `variable` is parsed as the folding identifier from the heading `// flow-login-variable Password Status`.
+### 3. Sub-feature Tree Display
 
-### Quick Marks
-
-- Use `// mark <desc>` to quickly annotate important code sections.
-- Empty `// mark` generates an automatic path-line annotation.
-
-Example:
+Use hyphens "-" to express sub-features. Steps within sub-features display hierarchically. Unordered steps auto-merge to the bottom.
 
 ```javascript
-// mark date processing function
+// flow-login-request 1 Send Login Request
+// flow-login-request 1.1 Assemble request params
+// flow-login-request Some description text
+```
+
+### 4. Quick Mark
+
+Use `mark` prefix to quickly annotate key code locations. Empty marks auto-generate path-line annotations.
+
+```javascript
+// mark-date Core date formatting function
 function processDate() {}
 
 // mark
-function compute() {
-  // auto path-line annotation is generated
-}
+function compute() {}
 ```
 
-## Features
+## Configuration
 
-- **Visual Tree Navigation**: Turns comments into a sidebar tree for easy overview.
-- **Instant Jump**: Click nodes to go directly to code lines with highlights.
-- **Error Detection**: Warns about missing starts/ends or duplicate steps.
-- **Code Hints**: Highlights flow comments in the editor.
-- **Quick Delete**: Right-click to delete flow nodes or entire flows.
-- **Custom Highlight Colors**: Configure colors for jumps and hints.
-- **Configurable Comments**: Set comment styles (//, #, etc.) and ignore paths/files.
-- **Performance**: Optimizes for large projects with scanning controls.
-- **Persistent Index**: Saves scans to avoid re-parsing.
-- **Non-numbered Heading Folding**: Fold sections using parsed keywords without numeric prefixes.
-- **Enhanced Completions**: Feature-title completions strictly filtered to existing items.
-- **Improved Code Hints**: Fixes issues and enhances code hinting behavior.
-- **Quick Marks**: Support `// mark <desc>` single-line marks and empty `// mark` for auto path-line annotation.
+Press `Ctrl+,` to open VS Code Settings, search for `Flow Comments` to customize:
+
+| Setting | Type | Default | Description |
+| --- | --- | --- | --- |
+| `flow.prefix` | string | `"flow"` | Flow comment prefix, e.g., `// flow-login start` |
+| `flow.markPrefix` | string | `"mark"` | Quick mark prefix, e.g., `// mark-description` |
+| `flow.includeGlobs` | array<string> | `["**/*.{ts,tsx,js,jsx}", "**/*.{java,kt}", "**/*.{go}", "**/*.{py}"]` | File types to scan; narrow scope to improve performance |
+| `flow.ignorePaths` | array<string> | `["node_modules", "dist", ".git"]` | Directories to ignore; avoid redundant parsing |
+| `flow.maxFileSizeKB` | number | `1024` | Maximum file size (KB) for parsing |
+| `flow.scanConcurrency` | number | `8` | Concurrent file processing during scan |
+| `flow.highlightBackground` | string | `rgba(255, 193, 7, 0.16)` | Highlight background color after jump |
+| `flow.highlightColor` | string | `#1A1A1A` | Highlight text color |
+| `flow.tokenBackground` | string | `rgba(255, 193, 7, 0.28)` | Prefix word background color |
+| `flow.tokenColor` | string | `#1A1A1A` | Prefix word text color |
+| `flow.hintBackground` | string | `rgba(255, 235, 59, 0.10)` | Flow comment line background color |
+| `flow.strictMode` | boolean | `true` | Enable error prompts for malformed markers |
+| `flow.commentStyles` | array<string> | `["//", "#"]` | Supported comment starters (e.g., `//`, `#`, `--`) |
+| `flow.markPathLevels` | number | `3` | Path segments to show in mark labels |
+
+*Note: Default settings work for most scenarios.*
+
+## Core Features
+
+- **Visual Flow Tree**: Comments auto-convert to structured tree in sidebar for quick overview.
+- **One-Click Jump**: Click tree nodes to jump directly to code with highlight.
+- **Smart Error Detection**: Strict mode alerts on malformed markers, missing start/end, duplicate steps.
+- **Flexible Customization**: Adjust comment prefix, colors, scan range, and more.
+- **High Performance**: Supports large projects with configurable concurrency and file size limits.
+- **Persistent Index**: Saves scan results to avoid re-parsing, improving experience.
 
 ## FAQ
 
-### Prerequisites
+**Q1: No flow tree in sidebar?**
 
-- Add comments with the prefix (default: "flow") to your code.
-- Supports Java, JavaScript, Python, Go, etc.
-- For large projects, adjust scanning settings.
+A: Check three things:
+- Comment format is correct (e.g., `// flow-xxx start`)
+- File type is in `includeGlobs` config
+- File path is not in `ignorePaths`
 
-### Common Issues
+**Q2: Slow scanning on large projects?**
 
-- **No tree nodes?** Check comments are added correctly, file types are included, and paths not ignored.
-- **Slow performance?** Limit file types, increase concurrency, reduce max file size.
-- **Index not updating?** Save file to trigger scan, or use "Scan Active File" command.
+A: Optimize config:
+- Narrow `includeGlobs` to only needed file types
+- Increase `flow.scanConcurrency`
+- Lower `flow.maxFileSizeKB` to filter large files
 
-## Support
+**Q3: Flow tree not syncing after code changes?**
 
-Like it? Star on [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=catislight.vscode-flow-comments&ssr=false#review-details) or [GitHub](https://github.com/catislight/vscode-flow-comments)!
+A: Save the file to trigger auto-scan, or use "Scan Active File" command manually.
 
-Found bugs or have ideas? Open an [Issue](https://github.com/catislight/vscode-flow-comments/issues) on GitHub.
+## Support & Feedback
+
+Like it? Star on [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=catislight.vscode-flow-comments&ssr=false#review-details) or [GitHub](https://github.com/catislight/vscode-flow-comments) ⭐️
+
+Found bugs or have suggestions? Open an [Issue](https://github.com/catislight/vscode-flow-comments/issues) on GitHub.

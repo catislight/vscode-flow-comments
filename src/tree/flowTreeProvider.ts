@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Graph, Node, OrderParts } from '../models/types';
 
-type Kind = 'feature' | 'start' | 'end' | 'level' | 'titleGroup' | 'titleItem';
+type Kind = 'feature' | 'subFeature' | 'start' | 'end' | 'level' | 'titleGroup' | 'titleItem';
 
 class FlowTreeItem extends vscode.TreeItem {
   kind: Kind;
@@ -40,37 +40,41 @@ export class FlowTreeProvider implements vscode.TreeDataProvider<FlowTreeItem> {
     }
     if (!element) {
       const items: FlowTreeItem[] = [];
+      const baseMap = new Map<string, number>();
       for (const [feature, fg] of Object.entries(this.graph.features)) {
-        const item = new FlowTreeItem(feature, 'feature', feature, vscode.TreeItemCollapsibleState.Collapsed);
-        item.description = `${fg.nodes.length}`;
+        const base = feature.split('-')[0];
+        const prev = baseMap.get(base) || 0;
+        baseMap.set(base, prev + fg.nodes.length);
+      }
+      for (const [base, count] of Array.from(baseMap.entries())) {
+        const item = new FlowTreeItem(base, 'feature', base, vscode.TreeItemCollapsibleState.Collapsed);
+        item.description = `${count}`;
         item.contextValue = 'flowFeature';
         items.push(item);
       }
       return Promise.resolve(items);
     }
-    const featureGraph = this.graph.features[element.feature];
-    if (!featureGraph) {
-      return Promise.resolve([]);
+    const allNodes: Node[] = [];
+    for (const [name, fg] of Object.entries(this.graph.features)) {
+      if (name === element.feature || name.startsWith(`${element.feature}-`)) {
+        allNodes.push(...fg.nodes);
+      }
     }
+    allNodes.sort((a, b) => a.line - b.line);
 
     if (element.kind === 'feature') {
-      const nodes = featureGraph.nodes;
+      const nodes = allNodes;
       const res: FlowTreeItem[] = [];
-      // start
+      const baseNodes = nodes.filter(n => n.feature === element.feature);
+      const subNames = new Set<string>();
       for (const n of nodes) {
-        if (n.role === 'start') {
-          const label = `start${labelFromDesc(n)}`;
-          const ti = new FlowTreeItem(label, 'start', element.feature, vscode.TreeItemCollapsibleState.None);
-          ti.node = n;
-          ti.tooltip = buildTooltip(n);
-          ti.command = buildRevealCommand(n);
-          ti.contextValue = 'flowStart';
-          res.push(ti);
+        const parts = n.feature.split('-');
+        if (parts.length >= 2 && parts[0] === element.feature) {
+          subNames.add(parts.slice(1).join('-'));
         }
       }
-      // level-1 groups
       const lv1 = new Map<number, Node[]>();
-      for (const n of nodes) {
+      for (const n of baseNodes) {
         const levels = n.order?.levels || [];
         if (n.role === 'step' && levels.length > 0) {
           const k = levels[0];
@@ -95,17 +99,9 @@ export class FlowTreeProvider implements vscode.TreeDataProvider<FlowTreeItem> {
         }
         res.push(ti);
       }
-      // unordered steps (no levels)
-      for (const n of nodes) {
-        if (n.role === 'step' && (!n.order || !n.order.levels || n.order.levels.length === 0)) {
-          const label = n.meta?.desc || '（无描述）';
-          const ti = new FlowTreeItem(label, 'level', element.feature, vscode.TreeItemCollapsibleState.None);
-          ti.node = n;
-          ti.tooltip = buildTooltip(n);
-          ti.command = buildRevealCommand(n);
-          ti.contextValue = 'flowNode';
-          res.push(ti);
-        }
+      for (const sub of Array.from(subNames).sort()) {
+        const ti = new FlowTreeItem(sub, 'subFeature', `${element.feature}-${sub}`, vscode.TreeItemCollapsibleState.Collapsed);
+        res.push(ti);
       }
       // title groups（非序号标题语法）：按标题折叠
       const titleMap = new Map<string, Node[]>();
@@ -133,13 +129,69 @@ export class FlowTreeProvider implements vscode.TreeDataProvider<FlowTreeItem> {
           res.push(ti);
         }
       }
+      // unordered steps (no levels) — only base feature, place at bottom
+      for (const n of baseNodes) {
+        if (n.role === 'step' && (!n.order || !n.order.levels || n.order.levels.length === 0)) {
+          const label = n.meta?.desc || '（无描述）';
+          const ti = new FlowTreeItem(label, 'level', element.feature, vscode.TreeItemCollapsibleState.None);
+          ti.node = n;
+          ti.tooltip = buildTooltip(n);
+          ti.command = buildRevealCommand(n);
+          ti.contextValue = 'flowNode';
+          res.push(ti);
+        }
+      }
+      return Promise.resolve(res);
+    }
+
+    if (element.kind === 'subFeature') {
+      const nodes = allNodes.filter(n => n.feature === element.feature);
+      const res: FlowTreeItem[] = [];
+      const lv1 = new Map<number, Node[]>();
+      for (const n of nodes) {
+        const levels = n.order?.levels || [];
+        if (n.role === 'step' && levels.length > 0) {
+          const k = levels[0];
+          const arr = lv1.get(k) || [];
+          arr.push(n);
+          lv1.set(k, arr);
+        }
+      }
+      for (const [k, arr] of Array.from(lv1.entries()).sort((a, b) => a[0] - b[0])) {
+        const pure = arr.find(n => (n.order?.levels?.length || 0) === 1);
+        const hasChildren = arr.some(n => (n.order?.levels?.length || 0) > 1);
+        const labelBase = `${k}`;
+        const label = pure ? `${labelBase}${labelFromDesc(pure)}` : `${labelBase}`;
+        const ti = new FlowTreeItem(label, 'level', element.feature, hasChildren ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None);
+        ti.path = [k];
+        ti.depth = 1;
+        ti.node = pure;
+        if (pure) {
+          ti.tooltip = buildTooltip(pure);
+          ti.command = buildRevealCommand(pure);
+          ti.contextValue = 'flowNode';
+        }
+        res.push(ti);
+      }
+      // unordered steps (no levels) — place at bottom within subFeature
+      for (const n of nodes) {
+        if (n.role === 'step' && (!n.order || !n.order.levels || n.order.levels.length === 0)) {
+          const label = n.meta?.desc || '（无描述）';
+          const ti = new FlowTreeItem(label, 'level', element.feature, vscode.TreeItemCollapsibleState.None);
+          ti.node = n;
+          ti.tooltip = buildTooltip(n);
+          ti.command = buildRevealCommand(n);
+          ti.contextValue = 'flowNode';
+          res.push(ti);
+        }
+      }
       return Promise.resolve(res);
     }
 
     if (element.kind === 'level') {
       const res: FlowTreeItem[] = [];
       const path = element.path || [];
-      const nodes = featureGraph.nodes.filter(n => n.role === 'step' && (n.order?.levels?.length || 0) >= path.length && path.every((v, i) => n.order!.levels[i] === v));
+      const nodes = allNodes.filter(n => n.role === 'step' && (n.order?.levels?.length || 0) >= path.length && path.every((v, i) => n.order!.levels[i] === v));
       const nextGroups = new Map<number, Node[]>();
       for (const n of nodes) {
         const lvls = n.order!.levels;
@@ -173,7 +225,7 @@ export class FlowTreeProvider implements vscode.TreeDataProvider<FlowTreeItem> {
     if (element.kind === 'titleGroup') {
       const res: FlowTreeItem[] = [];
       const groupName = element.label || '';
-      const nodes = featureGraph.nodes.filter(n => n.role === 'title' && (n.meta?.title || '未命名标题') === groupName);
+      const nodes = allNodes.filter(n => n.role === 'title' && (n.meta?.title || '未命名标题') === groupName);
       for (const n of nodes) {
         const label = buildTitleItemLabel(n);
         const ti = new FlowTreeItem(label, 'titleItem', element.feature, vscode.TreeItemCollapsibleState.None);
